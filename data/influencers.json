@@ -1,0 +1,22 @@
+[
+  {
+    "id": 1,
+    "name": "Bruce Attah",
+    "platforms": [
+      { "name": "Instagram", "followers": "3M", "reach": "2M", "engagementRate": "5%" },
+      { "name": "X", "followers": "650K", "reach": "500K", "engagementRate": "3.2%" },
+      { "name": "YouTube", "followers": "2M", "reach": "450K", "engagementRate": "4.8%" },
+      { "name": "Facebook", "followers": "500K", "reach": "450K", "engagementRate": "2%" }
+    ],
+    "image": "/images/Bruce Attah.png"
+  },
+  {
+    "id": 2,
+    "name": "David Mensah",
+    "platforms": [
+      { "name": "Instagram", "followers": "1.5M", "reach": "1M", "engagementRate": "4%" },
+      { "name": "YouTube", "followers": "800K", "reach": "300K", "engagementRate": "3.5%" }
+    ],
+    "image": "/images/David Mensah.png"
+  }
+]
