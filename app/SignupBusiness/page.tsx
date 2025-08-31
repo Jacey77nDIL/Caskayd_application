@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -67,7 +68,7 @@ export default function SignupBusinessPage() {
         JSON.stringify({ category, email, businessName })
       );
 
-      router.push('/');
+      router.push('/WebExplore');
     } catch (err) {
       console.error('Error submitting data:', err);
       setApiError('Something went wrong. Please try again.');

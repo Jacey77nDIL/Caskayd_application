@@ -1,0 +1,41 @@
+[
+   {
+    "id": 1,
+    "company": "HP",
+    "logo": "/images/hp.png",
+    "title": "New Product Launch",
+    "status": "Unpaid",
+    "deliverables": ["Product demo", "Products upgrades"],
+    "price": 450000,
+    "dueDate": "2030-12-16",
+    "dateAdded": "2024-04-23"
+  },
+  {
+    "id": 2,
+    "company": "Yandex",
+    "logo": "/images/yandex.png",
+    "title": "New Product Launch",
+    "status": "Paid",
+    "deliverables": [
+      "Product demo",
+      "Products upgrades"
+    ],
+    "price": 450000,
+    "dueDate": "2030-12-16",
+    "dateAdded": "2024-04-23"
+  },
+  {
+    "id": 3,
+    "company": "Xerox",
+    "logo": "/images/xerox.png",
+    "title": "New Product Launch",
+    "status": "Unpaid",
+    "deliverables": [
+      "Product demo",
+      "Products upgrades"
+    ],
+    "price": 450000,
+    "dueDate": "2030-12-16",
+    "dateAdded": "2024-04-23"
+  }
+]
