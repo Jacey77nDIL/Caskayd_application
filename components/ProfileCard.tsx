@@ -14,6 +14,8 @@ interface ProfileCardProps {
   image: string;
   width?: number;  // optional
   height?: number; // optional
+  checked: boolean; // ✅ add this
+  onCheckChange: () => void; // ✅ since you’re also passing it
 }
 
 export default function ProfileCard({
