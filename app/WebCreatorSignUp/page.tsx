@@ -119,6 +119,19 @@ export default function SignupPage() {
     }
   };
 
+  const handleConnectInstagram = () => {
+      const clientId = process.env.NEXT_PUBLIC_FB_APP_ID; 
+      const redirectUri = "https://your-frontend-domain.com/auth/callback/facebook"; 
+      const state = Math.random().toString(36).substring(7); // unique string for security
+
+      const oauthUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(
+        redirectUri
+      )}&scope=instagram_basic,instagram_manage_insights,pages_show_list&response_type=code&state=${state}`;
+
+      window.location.href = oauthUrl;
+    };
+
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 h-screen">
       {/* Left side image */}
@@ -279,21 +292,17 @@ export default function SignupPage() {
 
             {/* Instagram row */}
             <div className="flex items-center justify-between">
-              
                 <span className={`${inter.className} text-black text-lg`}>Instagram</span>
-              
-                <button
-                  onClick={() =>
-                    setAccounts((prev) => ({ ...prev, instagram: !prev.instagram }))
-                  }
-                  className={`${inter.className} flex items-left gap-2 px-4 py-2 rounded-full text-sm font-medium transition-transform duration-200 hover:scale-110 ${
-                    accounts.instagram ? "bg-green-500 text-white" : "bg-gray-500/80 text-white"
-                  }`}
-                >
-                  {accounts.instagram ? "Connected" : "Disconnected"}
-                  <LinkIcon size={16} />
-                </button>
-              
+
+              <button
+                onClick={() => handleConnectInstagram()}
+                className={`${inter.className} flex items-left gap-2 px-4 py-2 rounded-full text-sm font-medium transition-transform duration-200 hover:scale-110 ${
+                  accounts.instagram ? "bg-green-500 text-white" : "bg-gray-500/80 text-white"
+                }`}
+              >
+                {accounts.instagram ? "Connected" : "Connect Instagram"}
+                <LinkIcon size={16} />
+              </button>
             </div>
           </div>
 
