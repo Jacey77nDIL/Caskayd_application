@@ -121,7 +121,7 @@ export default function SignupPage() {
 
   const handleConnectInstagram = () => {
       const clientId = process.env.NEXT_PUBLIC_FB_APP_ID; 
-      const redirectUri = "https://your-frontend-domain.com/auth/callback/facebook"; 
+      const redirectUri = "https://caskayd-application.vercel.app/auth/callback/facebook"; 
       const state = Math.random().toString(36).substring(7); // unique string for security
 
       const oauthUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(
