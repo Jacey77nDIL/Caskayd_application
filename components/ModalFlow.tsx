@@ -36,6 +36,7 @@ export default function ModalFlow() {
         {isOpen && step === 1 && (
           <Modal
             key="step1"
+            isOpen={isOpen}
             onClose={() => setIsOpen(false)}
             title="Connect Your Account"
           >
@@ -64,6 +65,7 @@ export default function ModalFlow() {
         {isOpen && step === 2 && (
           <Modal
             key="step2"
+            isOpen={isOpen}
             onClose={() => setIsOpen(false)}
             title="Set Up Your Account"
           >
