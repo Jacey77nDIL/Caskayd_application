@@ -15,8 +15,8 @@ export default function TopNavbar() {
       const [isOpen, setIsOpen] = useState(false);
     
       const links = [
-        { name: "Home", href: "/WebCreatorHomeToDo" },
-        { name: "Chat", href: "/" },
+        { name: "Home", href: "/WebCreatorHomeToDo",},
+        { name: "Chat", href: "/WebCreatorChat" },
       ];
   return (
     <nav className="flex items-center justify-between px-6 py-4 bg-transparent text-black">
@@ -73,7 +73,7 @@ export default function TopNavbar() {
                 </li>
               );
             })}
-            <div className="w-10 h-10 bg-gray-500 rounded-full"></div>
+            <img src="/images/avatar.png" alt="profile" className="w-15 h-15 rounded-full"/>
           </ul>
         </div>
       )}

@@ -199,7 +199,7 @@ export default function WebCampaignPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-black text-white bg-[url('/images/backgroundImage.png')] bg-cover bg-center">
       <Navbar />
       {/*Below the navbar contanir*/}
       <div className="flex items-center justify-between">

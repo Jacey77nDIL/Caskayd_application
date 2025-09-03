@@ -1,0 +1,83 @@
+[
+  {
+    "id": 1,
+    "company": "HP",
+    "title": "New Product Launch",
+    "price": "₦450,000",
+    "dueDate": "2024-04-23",
+    "logo": "/images/hp.png",
+    "deliverables": [
+      "Product demo",
+      "Product upgrades",
+      "Product perks",
+      "Product use cases",
+      "PVIM"
+    ]
+  },
+  {
+    "id": 2,
+    "company": "JD",
+    "title": "New Product Launch",
+    "price": "₦250,000",
+    "dueDate": "2024-06-15",
+    "logo": "/images/Xerox.png",
+    "deliverables": [
+      "Product demo",
+      "Customer discounts"
+    ]
+  },
+   {
+    "id": 1,
+    "company": "HP",
+    "title": "New Product Launch",
+    "price": "₦450,000",
+    "dueDate": "2024-04-23",
+    "logo": "/images/hp.png",
+    "deliverables": [
+      "Product demo",
+      "Product upgrades",
+      "Product perks",
+      "Product use cases",
+      "PVIM"
+    ]
+  },
+  {
+    "id": 2,
+    "company": "JD",
+    "title": "New Product Launch",
+    "price": "₦250,000",
+    "dueDate": "2024-06-15",
+    "logo": "/images/Xerox.png",
+    "deliverables": [
+      "Product demo",
+      "Customer discounts"
+    ]
+  },
+   {
+    "id": 1,
+    "company": "HP",
+    "title": "New Product Launch",
+    "price": "₦450,000",
+    "dueDate": "2024-04-23",
+    "logo": "/images/hp.png",
+    "deliverables": [
+      "Product demo",
+      "Product upgrades",
+      "Product perks",
+      "Product use cases",
+      "PVIM"
+    ]
+  },
+  {
+    "id": 2,
+    "company": "JD",
+    "title": "New Product Launch",
+    "price": "₦250,000",
+    "dueDate": "2024-06-15",
+    "logo": "/images/Xerox.png",
+    "deliverables": [
+      "Product demo",
+      "Customer discounts"
+    ]
+  }
+]

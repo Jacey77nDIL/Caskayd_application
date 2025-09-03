@@ -1,8 +1,9 @@
+import Navbar from "@/components/Navbar";
+
 export default function WebCreatorChatPage() {
   return (
-    <div>
-      <h1>Web Creator Chat</h1>
-      <p>Welcome to the chat page!</p>
-    </div>
+        <main className="min-h-screen bg-black text-white bg-[url('/images/backgroundImage.png')] bg-cover bg-center">
+          <Navbar />
+        </main>
   );
 }
