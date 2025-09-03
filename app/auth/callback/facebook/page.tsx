@@ -18,7 +18,7 @@ function FacebookCallbackInner() {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/facebook`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code, state }),
+          body: JSON.stringify({ code, state }), // here add the token from localStorage in an authorization header
         });
 
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);

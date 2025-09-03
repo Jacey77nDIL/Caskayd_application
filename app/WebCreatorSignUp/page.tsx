@@ -185,15 +185,14 @@ export default function SignupPage() {
           {/* Username */}
           <div className="flex flex-col">
             <label className={`${inter.className} mb-1 font-medium text-black`}>
-              Username
+              Name
             </label>
             <input
-              
               type="text"
               value={userName}
               onChange={(e) => setUserName(e.target.value)}
               required
-              placeholder="Enter your username"
+              placeholder="Enter your name"
               className="border border-[#5E3345] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#843163] text-black"
             />
           </div>
