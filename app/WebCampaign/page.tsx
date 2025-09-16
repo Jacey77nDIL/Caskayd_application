@@ -6,16 +6,15 @@ import { Inter } from "next/font/google";
 import Card from "@/components/Card";
 import Modal from "@/components/Modal";
 import { useRouter } from "next/navigation";
-import { Upload,Instagram, Youtube, Twitter, Music } from "lucide-react";
+import { Upload, Instagram, Music } from "lucide-react";
 import Image from "next/image";
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 
 type Campaign = {
   id: number;
   title: string;
   date: string;
   image?: string;
-  creators?: string;
   options?: {
     dropdown1: string; // niche
     dropdown2: string; // platform
@@ -37,37 +36,41 @@ export default function WebCampaignPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  //Modal states
+
+  // Modal states
   const [showModalStep1, setShowModalStep1] = useState(false);
-  const [showModalStep2, setShowModalStep2] = useState(false);
   const [showModalStep3, setShowModalStep3] = useState(false);
-  //Modal data states
+
+  // Modal data states
   const [campaignName, setCampaignName] = useState("");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [campaignBio, setCampaignBio] = useState("");
   const [niche, setNiche] = useState("");
   const [platform, setPlatform] = useState("");
   const [reach, setReach] = useState("");
-  //Loading state
+
+  // Loading states
   const [isLoading, setIsLoading] = useState(true);
-  // 🔹 Fetch campaigns from API on load
+  const [showRedirectLoader, setShowRedirectLoader] = useState(false); // 🔹 new
+
+  // Fetch campaigns
   useEffect(() => {
-  async function fetchCampaigns() {
-    try {
-      setIsLoading(true); // start loading
-      const res = await fetch("/api/campaigns");
-      if (!res.ok) throw new Error("Failed to load campaigns");
-      const data = await res.json();
-      setCampaigns(data);
-    } catch (error: any) {
-      setApiError(error.message);
-    } finally {
-      setIsLoading(false); // stop loading
+    async function fetchCampaigns() {
+      try {
+        setIsLoading(true);
+        const res = await fetch("/api/campaigns");
+        if (!res.ok) throw new Error("Failed to load campaigns");
+        const data = await res.json();
+        setCampaigns(data);
+      } catch (error: any) {
+        setApiError(error.message);
+      } finally {
+        setIsLoading(false);
+      }
     }
-  }
-  fetchCampaigns();
-}, []);
-  // 🔹 File upload handler
+    fetchCampaigns();
+  }, []);
+
+  // File upload handler
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -76,16 +79,18 @@ export default function WebCampaignPage() {
       reader.readAsDataURL(file);
     }
   };
+
+  // Reset form
   const resetForm = () => {
-  setCampaignName("");
-  setPreviewImage(null);
-  setCampaignBio("");
-  setNiche("");
-  setPlatform("");
-  setReach("");
-  setMessage(null);
-};
-  // modal 1 Validations
+    setCampaignName("");
+    setPreviewImage(null);
+    setNiche("");
+    setPlatform("");
+    setReach("");
+    setMessage(null);
+  };
+
+  // Step 1 validation
   const validateForm1 = (): boolean => {
     if (!campaignName.trim()) {
       setMessage("Please enter your campaign name");
@@ -98,31 +103,17 @@ export default function WebCampaignPage() {
     setMessage(null);
     return true;
   };
-  //Modal 1 submit
+
+  // Step 1 submit
   const handleSubmit1 = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm1()) return;
     setMessage(null);
     setShowModalStep1(false);
-    setShowModalStep2(true);
-  };
-  //Modal 2 Validation
-  const validateForm2 = (): boolean => {
-    if (!campaignBio.trim()) {
-      setMessage("Please enter your campaign bio/description");
-      return false;
-    }
-    setMessage(null);
-    return true;
-  };
-  //Modal 2 submit
-  const handleSubmit2 = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm2()) return;
-    setShowModalStep2(false);
     setShowModalStep3(true);
   };
-  //Modal 3 validation
+
+  // Step 3 validation
   const validateForm3 = (): boolean => {
     if (!niche.trim()) {
       setMessage("Please select a niche for your campaign");
@@ -139,7 +130,8 @@ export default function WebCampaignPage() {
     setMessage(null);
     return true;
   };
-  //Final Submit → save to API
+
+  // Final submit
   const handleFinalSubmit = async () => {
     if (!validateForm3()) return;
 
@@ -150,7 +142,6 @@ export default function WebCampaignPage() {
       title: campaignName,
       date: new Date().toLocaleDateString(),
       image: previewImage ?? "",
-      creators: campaignBio,
       options: {
         dropdown1: niche,
         dropdown2: platform,
@@ -169,21 +160,28 @@ export default function WebCampaignPage() {
 
       const saved = await res.json();
       setCampaigns((prev) => [...prev, saved]);
-      // Reset form & close modals
-      setCampaignName("");
-      setPreviewImage(null);
-      setCampaignBio("");
-      setNiche("");
-      setPlatform("");
-      setReach("");
+
+      // Reset form & close modal
+      resetForm();
       setShowModalStep3(false);
+
+      // 🔹 Show redirect loader
+      setShowRedirectLoader(true);
+
+      // Wait 3s then redirect
+      setTimeout(() => {
+        // ✅ Redirect directly with campaignId
+        setShowRedirectLoader(false);
+        router.push(`/WebExplore?campaignId=${saved.id}`);
+      }, 3000);
     } catch (err: any) {
       setApiError(err.message);
     } finally {
       setIsSubmitting(false);
     }
   };
-  //Delete campaign → API + update state
+
+  // Delete campaign
   const handleDelete = async (id: number) => {
     try {
       const res = await fetch("/api/campaigns", {
@@ -199,47 +197,63 @@ export default function WebCampaignPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white bg-[url('/images/backgroundImage.png')] bg-cover bg-center">
+    <div className="min-h-screen bg-black text-white bg-[url('/images/backgroundImage.png')] bg-cover bg-center relative">
       <Navbar />
-      {/*Below the navbar contanir*/}
+
+      {/* 🔹 Redirect Loader Overlay */}
+      {showRedirectLoader && (
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+          <div className="flex flex-col items-center">
+            <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+            <p className="mt-4 text-white text-xl font-semibold">Redirecting...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Page Header */}
       <div className="flex items-center justify-between">
-        {/*Header*/}
         <h1 className={`${inter.className} mt-5 ml-7 text-3xl text-white font-bold`}>
           Campaigns
         </h1>
-        {/*Add button*/}
-        <button onClick={() => setShowModalStep1(true)} className={`mr-10 font-medium ${inter.className} text-2xl transition-transform duration-200 hover:scale-110 border border-white py-2 px-4 rounded-2xl`}>
+        <button
+          onClick={() => setShowModalStep1(true)}
+          className={`mr-10 font-medium ${inter.className} text-2xl transition-transform duration-200 hover:scale-110 border border-white py-2 px-4 rounded-2xl`}
+        >
           ADD +
         </button>
       </div>
-      {/*Divider*/}
+
+      {/* Divider */}
       <div className="ml-5 items-center w-[96%] h-[1px] bg-white my-4"></div>
-      {/*Error message*/}
+
+      {/* API error */}
       {apiError && <p className="text-red-500 ml-5">{apiError}</p>}
-      {/*Card gird*/}
+
+      {/* Campaigns grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-10 ml-5">
-  {isLoading ? (
-    <p className="text-gray-400 text-2xl font-extrabold col-span-full">Loading campaigns...</p>
-  ) : campaigns.length > 0 ? (
-    campaigns.map((campaign) => (
-      <Card
-        key={campaign.id}
-        id={campaign.id}
-        title={campaign.title}
-        date={campaign.date}
-        onDelete={handleDelete}
-      />
-    ))
-  ) : (
-    <p className={`${inter.className} text-gray-400 text-2xl font-extrabold col-span-full`}>No campaigns yet. Add one!</p>
-  )}
-</div>
+        {isLoading ? (
+          <p className="text-gray-400 text-2xl font-extrabold col-span-full">Loading campaigns...</p>
+        ) : campaigns.length > 0 ? (
+          campaigns.map((campaign) => (
+            <Card
+              key={campaign.id}
+              id={campaign.id}
+              title={campaign.title}
+              date={campaign.date}
+              onDelete={handleDelete}
+            />
+          ))
+        ) : (
+          <p className={`${inter.className} text-gray-400 text-2xl font-extrabold col-span-full`}>
+            No campaigns yet. Add one!
+          </p>
+        )}
+      </div>
       {/* Step 1 */}
       <Modal isOpen={showModalStep1} onClose={() => {setShowModalStep1(false);resetForm();}}>
-        <div className="ml-10 grid grid-cols-3 md:grid-cols-3">
-        <div className="items-center w-[60%] h-[10px] rounded-2xl bg-[#823A5E]  "></div>
-        <div className="items-center w-[60%] h-[10px] rounded-2xl bg-[#ACA2A7]"></div>
-        <div className="items-center w-[60%] h-[10px] rounded-2xl bg-[#ACA2A7]"></div>
+        <div className="ml-10 grid grid-cols-2 md:grid-cols-2">
+        <div className="items-center w-[80%] h-[10px] rounded-2xl bg-[#823A5E]  "></div>
+        <div className="items-center w-[80%] h-[10px] rounded-2xl bg-[#ACA2A7]"></div>
         </div>
         <form onSubmit={handleSubmit1} className="w-full max-h-[80vh] overflow-y-auto px-8 py-6 no-scrollbar">
           <div>
@@ -278,52 +292,19 @@ export default function WebCampaignPage() {
         </form>
       </Modal>
       {/* Step 2 */}
-      <Modal isOpen={showModalStep2} onClose={() => { setShowModalStep2(false); setShowModalStep1(true); }}>
-        <div className="ml-10 grid grid-cols-3 md:grid-cols-3">
-        <div className="items-center w-[60%] h-[10px] rounded-2xl bg-[#823A5E]  "></div>
-        <div className="items-center w-[60%] h-[10px] rounded-2xl bg-[#823A5E]"></div>
-        <div className="items-center w-[60%] h-[10px] rounded-2xl bg-[#ACA2A7]"></div>
-        </div>
-        <form onSubmit={handleSubmit2} className="w-full max-h-[80vh] overflow-y-auto px-8 py-6 no-scrollbar">
-          <div className="flex flex-col">
-            <label htmlFor="campaignBio" className={`${inter.className} text-black font-semibold text-center mb-2`}>
-              Who are your ideal creators? Think about style, niche, or personality.
-            </label>
-            <textarea
-              id="campaignBio"
-              rows={6}
-              value={campaignBio}
-              onChange={(e) => setCampaignBio(e.target.value)}
-              className="border px-10 py-2 rounded resize-none text-black focus:outline-none focus:ring-2 focus:ring-[#843163]"
-              placeholder="Write a short description..."
-            />
-          </div>
-
-          {message && <p className="text-red-500 mt-2">{message}</p>}
-
-          <div className="w-full mt-8 flex justify-center">
-            <button
-              type="submit"
-              className={`${inter.className} bg-[#823A5E] text-white px-10 py-2 rounded-2xl hover:bg-[#6d2e4f] transition-transform duration-200 hover:scale-110`}
-            >
-              Next
-            </button>
-          </div>
-        </form>
-      </Modal>
+      
 
 {/* Step 3 */}
 <Modal
   isOpen={showModalStep3}
   onClose={() => {
     setShowModalStep3(false);
-    setShowModalStep2(true);
+    setShowModalStep1(true);
   }}
 >
-  <div className="ml-10 grid grid-cols-3 md:grid-cols-3">
-    <div className="items-center w-[60%] h-[10px] rounded-2xl bg-[#823A5E]" />
-    <div className="items-center w-[60%] h-[10px] rounded-2xl bg-[#823A5E]" />
-    <div className="items-center w-[60%] h-[10px] rounded-2xl bg-[#823A5E]" />
+  <div className="ml-10 grid grid-cols-2 md:grid-cols-2">
+    <div className="items-center w-[80%] h-[10px] rounded-2xl bg-[#823A5E]" />
+    <div className="items-center w-[80%] h-[10px] rounded-2xl bg-[#823A5E]" />
   </div>
 
   <div className="w-full max-h-[80vh] overflow-y-auto px-8 py-6 no-scrollbar">

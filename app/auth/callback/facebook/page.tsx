@@ -29,7 +29,7 @@ function FacebookCallbackInner() {
         // store token if backend sends it back
         // localStorage.setItem("token", data.token);
 
-        router.push("/WebCreatorHomeToDo");
+        router.push("/signup?linked=instagram");
       } catch (err) {
         console.error("Error exchanging Facebook code:", err);
       }

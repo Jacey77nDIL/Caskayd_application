@@ -1,11 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter,useSearchParams } from "next/navigation";
 import { Inter } from "next/font/google";
 import { Eye, EyeOff, Link as LinkIcon, Upload } from "lucide-react";
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import Modal from "@/components/Modal";
+import { storeToken } from "@/utils/auth";
 
 
 const inter = Inter({
@@ -15,6 +16,9 @@ const inter = Inter({
 });
 
 export default function SignupPage() {
+  const params = useSearchParams();
+  const linked = params.get("linked");
+
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [userName, setUserName] = useState("");
@@ -92,12 +96,24 @@ export default function SignupPage() {
     };
 
     try {
-      const response = await fetch("/api/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const token = localStorage.getItem("token");
+
+const response = await fetch("https://caskayd-backend.onrender.com/signup/creator", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}), //include JWT if available
+  },
+  body: JSON.stringify(payload),
+});
+
       if (!response.ok) throw new Error("Failed to submit sign-up data");
+      //parse JSON response
+      const data: { token: string } = await response.json();
+      //store JWT in localStorage
+      if (data.token) {
+        storeToken(data.token);
+      }
       setShowModalStep2(false);
       router.push("/WebExplore");
     } catch (err) {
@@ -130,6 +146,18 @@ export default function SignupPage() {
 
       window.location.href = oauthUrl;
     };
+
+    useEffect(() => {
+    if (linked) {
+      setShowModalStep1(true); // reopen modal step 1
+      if (linked === "instagram") {
+        setAccounts((prev) => ({ ...prev, instagram: true }));
+      }
+      if (linked === "tiktok") {
+        setAccounts((prev) => ({ ...prev, tiktok: true }));
+      }
+    }
+  }, [linked]);
 
 
   return (
@@ -239,6 +267,9 @@ export default function SignupPage() {
                 )}
               </button>
             </div>
+            <a href="/WebCreatorSignIn" className="mt-2 text-sm font-medium text-[#843163] hover:underline w-fit">
+              Or pick up from where you left
+            </a>
           </div>
 
           {/* Get Started */}
@@ -308,14 +339,21 @@ export default function SignupPage() {
           {/* Next button centered */}
           <div className="w-full mt-8 flex justify-center">
             <button
-              onClick={() => {
-                setShowModalStep1(false);
-                setShowModalStep2(true);
-              }}
-              className={`${inter.className} bg-[#823A5E] text-white px-10 py-2 rounded-2xl hover:bg-[#6d2e4f] transition-transform duration-200 hover:scale-110`}
-            >
-              Next
-            </button>
+  onClick={() => {
+    if (!accounts.tiktok && !accounts.instagram) return; // block if none linked
+    setShowModalStep1(false);
+    setShowModalStep2(true);
+  }}
+  disabled={!accounts.tiktok && !accounts.instagram} // disable if none linked
+  className={`${inter.className} px-10 py-2 rounded-2xl transition-transform duration-200 ${
+    !accounts.tiktok && !accounts.instagram
+      ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+      : "bg-[#823A5E] text-white hover:bg-[#6d2e4f] hover:scale-110"
+  }`}
+>
+  Next
+</button>
+
           </div>
         </div>
       </Modal>

@@ -9,12 +9,33 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
+// 1️⃣ Define a single FiltersState type
+interface FiltersState {
+  platform: string | null;
+  impressions: string | null;
+  price: string | null;
+}
+
+// 2️⃣ Define FilterBarProps ONCE using FiltersState
+interface FilterBarProps {
+  filters: FiltersState;
+  setFilters: React.Dispatch<React.SetStateAction<FiltersState>>;
+}
+
 interface DropdownOption {
   label: string;
   value: string;
 }
 
-const filters = [
+interface FilterConfig {
+  key: keyof FiltersState; // enforces only platform | impressions | price
+  label: string;
+  icon: React.ReactNode;
+  options: DropdownOption[];
+}
+
+// 3️⃣ Config stays the same
+const filtersConfig: FilterConfig[] = [
   {
     key: "platform",
     label: "Platform",
@@ -44,20 +65,17 @@ const filters = [
   },
 ];
 
-export default function FilterBar() {
+export default function FilterBar({ filters, setFilters }: FilterBarProps) {
   const [openFilter, setOpenFilter] = useState<string | null>(null);
-  const [selected, setSelected] = useState<Record<string, string | null>>({
-    platform: null,
-    impressions: null,
-    price: null,
-  });
-
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown if clicked outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(event.target as Node)
+      ) {
         setOpenFilter(null);
       }
     }
@@ -70,28 +88,28 @@ export default function FilterBar() {
   return (
     <div
       ref={wrapperRef}
-      className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-6 w-full max-w-4xl mx-auto"
+      className="flex flex-col py-6 w-full max-w-4xl  mx-auto"
     >
       {/* Header */}
       <h2
-        className={`${inter.className} text-lg font-semibold text-white mb-4 sm:mb-0`}
+        className={`${inter.className} text-lg font-semibold text-white mb-7 sm:mb-0`}
       >
         Filter
       </h2>
 
       {/* Buttons */}
       <div className="flex gap-3 flex-wrap">
-        {filters.map((filter) => (
+        {filtersConfig.map((filter) => (
           <div key={filter.key} className="relative">
             <button
               onClick={() =>
                 setOpenFilter(openFilter === filter.key ? null : filter.key)
               }
               className={`${inter.className} flex items-center 
-  px-2 sm:px-3 py-1 sm:py-1.5 
-  bg-[#823A5E] text-white rounded-full 
-  text-xs sm:text-sm 
-  transition-all duration-200 hover:scale-105`}
+                px-2 sm:px-3 py-1 sm:py-1.5 
+                bg-[#823A5E] text-white rounded-full 
+                text-xs sm:text-sm 
+                transition-all duration-200 hover:scale-105`}
             >
               {filter.icon}
               {filter.label}
@@ -100,20 +118,23 @@ export default function FilterBar() {
 
             {/* Dropdown */}
             {openFilter === filter.key && (
-              <div className="absolute top-10 left-0 
-  w-32 sm:w-40 md:w-48 
-  bg-white rounded-xl shadow-lg p-2 z-50 text-xs sm:text-sm">
+              <div
+                className="absolute top-10 left-0 
+                  w-32 sm:w-40 md:w-48 
+                  bg-white rounded-xl shadow-lg p-2 z-50 text-xs sm:text-sm"
+              >
                 {filter.options.map((option) => {
-                  const isSelected = selected[filter.key] === option.value;
+                  const isSelected = filters[filter.key] === option.value;
                   return (
                     <div
                       key={option.value}
                       onClick={() =>
-                        setSelected((prev) => ({
-                          ...prev,
-                          [filter.key]: option.value,
-                        }))
-                      }
+  setFilters((prev) => ({
+    ...prev,
+    [filter.key]:
+      prev[filter.key] === option.value ? null : option.value, // toggle logic
+  }))
+}
                       className="flex items-center gap-2 px-3 py-2 text-black cursor-pointer hover:bg-gray-100 rounded-lg"
                     >
                       <div

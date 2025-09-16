@@ -1,36 +1,58 @@
-//Selection page
-'use client';
+import Image from "next/image";
+import { Inter } from "next/font/google";
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+});
 
-
-import { useRouter } from 'next/navigation';
-
-export default function Home() {
-  const router = useRouter();
-
+export default function LandingPage() {
   return (
-    <main className="min-h-screen bg-black flex items-center justify-center px-4 sm:px-6 md:px-8 lg:px-12"> 
-    <div  className="w-full max-w-[1200px] h-auto md:h-[550px] bg-cover bg-center rounded-2xl shadow-xl flex flex-col items-center justify-center text-white p-6 md:p-12">
-      <div className=" flex-col sm:flex-row mt-2 w-full sm:max-w-[500px] grid grid-cols-2 md:grid-cols-2 gap-4">
-        {/*dummy LOGIN page*/}
-        <button onClick={() => router.push('/Login')} className='w-full bg-white text-black px-6 py-3 text-lg sm:text-xl rounded-sm hover:scale-110 hover:shadow-lg transition-transform duration-300'>
-          Login
-        </button>
-        {/*Main sign up bussines page*/}
-        <button onClick={() => router.push('/WebBusinessSignUp')} className='w-full bg-white text-black px-6 py-3 text-lg sm:text-xl rounded-sm hover:scale-110 hover:shadow-lg transition-transform duration-300'>
-          WebBusinessSignUp
-        </button>
-        <button onClick={() => router.push('/WebExplore')} className='w-full bg-white text-black px-6 py-3 text-lg sm:text-xl rounded-sm hover:scale-110 hover:shadow-lg transition-transform duration-300'>
-          WebExplore
-        </button>
-        <button onClick={() => router.push('/WebCreatorSignUp')} className='w-full bg-white text-black px-6 py-3 text-lg sm:text-xl rounded-sm hover:scale-110 hover:shadow-lg transition-transform duration-300'>
-          WebCreatorSignUp
-        </button>
-        <button onClick={() => router.push('/WebCreatorHomeToDo')} className='w-full bg-white text-black px-6 py-3 text-lg sm:text-xl rounded-sm hover:scale-110 hover:shadow-lg transition-transform duration-300'>
-          WebCreatorHomeToDo
-        </button>
-   
+<div className="min-h-screen flex flex-col items-center bg-black">
+      {/* Navbar */}
+  <div className="w-[90%] sm:w-[88%] md:w-[84%] lg:w-[80%] py-4 flex flex-row justify-between items-center">
+        <h1 className={`${inter.className} text-3xl sm:text-4xl md:text-5xl font-medium bg-gradient-to-r from-[#846120] via-[#9D2424] to-[#8D077B] bg-clip-text text-transparent`}>
+          Caskayd
+        </h1>
       </div>
-    </div>  
-    </main>
+
+{/* Hero Section */}
+<div className="relative w-[90%] mt-2 rounded-2xl overflow-hidden">
+  {/* Background Image */}
+  <div className="absolute inset-0">
+    <Image src="/images/landing.jpeg" alt="Influencer marketing background" fill priority className="object-cover object-center"/>
+  </div>
+  {/* Overlay Content */}
+  <div className="relative z-10 flex flex-col items-center justify-start text-center px-4 sm:px-8 lg:px-20 py-10 sm:py-16">
+    {/* Headline */}
+    <h2 className={`text-white ${inter.className} font-extrabold mb-4 text-2xl sm:text-3xl md:text-5xl lg:text-6xl max-w-4xl`}>
+      Your Partner For Strategic Influencer Marketing
+    </h2>
+    {/* Subtext */}
+    <p className={`text-white ${inter.className} font-light mb-8 text-sm sm:text-base md:text-lg lg:text-2xl max-w-3xl`}>
+      Whether you&apos;re a business looking to expand your reach or a creator
+      seeking impactful collaborations, Caskayd provides the intuitive tools
+      and resources to make it happen.
+    </p>
+    {/* Prompt */}
+    <h3 className={`text-white ${inter.className} font-medium mb-6 text-base sm:text-lg md:text-xl lg:text-2xl`}>
+      Quick one! Where do you belong?
+    </h3>
+    {/* Buttons */}
+    <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 md:gap-12 lg:gap-20 w-full max-w-md">
+        <a href="/creator" className="flex-1">
+          <button className={`${inter.className} w-full py-3 sm:py-4 bg-white text-black text-lg sm:text-xl font-medium rounded-md transition-transform duration-300 hover:scale-105 hover:bg-gray-200`}>
+            Creator
+          </button>
+        </a>
+        <a href="/business" className="flex-1">
+          <button className={`${inter.className} w-full py-3 sm:py-4 bg-black text-white text-lg sm:text-xl font-medium rounded-md transition-transform duration-300 hover:scale-105 hover:bg-gray-900`}>
+            Business
+          </button>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
   );
 }

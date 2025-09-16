@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { Inter } from "next/font/google";// import for fonts
 import { ChevronDownIcon } from "@heroicons/react/24/solid";//import for chevron
 import Modal from "@/components/Modal";//import for modal components
+import { storeToken } from "@/utils/auth";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -148,13 +149,29 @@ const handleFinalSubmit = async () => {
     ...modalData, //modal fields here
   };
 console.log(payload)
-  try {                {/*Change for real API url later*/}
-    const response = await fetch("/api/signup", {
+  try {                         {/*Change for real API url later*/}
+    const token = localStorage.getItem("token");
+
+    const response = await fetch("https://caskayd-backend.onrender.com/signup/business", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`, // always sent
+      },
       body: JSON.stringify(payload),
     });
     if (!response.ok) throw new Error("Failed to submit sign-up data");
+
+    type SignupResponse = {
+    token: string;   // backend returns this
+    message?: string; // optional extra field
+      };
+
+    // Save JWT token from backend
+    const data: SignupResponse = await response.json();
+    if (data.token) {
+      storeToken(data.token);
+    }
 
     router.push("/WebExplore");
   } catch (err) {
@@ -278,7 +295,7 @@ console.log(payload)
                   }`}
                 >
                   <Plus className="w-5 h-5" />
-                </button>
+                </button> 
               </div>
             )}
           </div>
@@ -294,6 +311,9 @@ console.log(payload)
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
+            <a href="/WebBusinessSignIn" className="mt-2 text-sm font-medium text-[#843163] hover:underline w-fit">
+              Or pick up from where you left
+            </a>
           </div>
 
           {/* Submit button */}
