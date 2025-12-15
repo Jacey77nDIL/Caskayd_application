@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Inter } from "next/font/google";
+import { Inter } from "next/font/google";//spe
 
 const inter = Inter({
   subsets: ["latin"],

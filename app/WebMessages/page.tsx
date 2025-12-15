@@ -1,428 +1,389 @@
 "use client";
+
 import { useState, useEffect, useRef } from "react";
-import Navbar from "@/components/Navbar";
-import { Search, Phone, Send, Paperclip, Mic, Smile, ThumbsUp } from "lucide-react";
+import Sidebar from "@/components/Sidebar";
+import PayStackPayment from "@/components/payment";
 import Image from "next/image";
 import { format, isToday, isYesterday } from "date-fns";
+import { Phone, Send, Paperclip, Mic, Smile, ArrowLeft, Loader2 } from "lucide-react";
 
-// ---- MOCK DATA ----
-const mockCampaigns = [
-  { id: 1, name: "New Product Launch", payment: true },
-  { id: 2, name: "Summer Promo", payment: true },
-  { id: 3, name: "Brand Collab", payment: false },
-];
+// Import Central API
+import { 
+  getConversations, 
+  getConversationDetail, 
+  sendMessage, 
+  markConversationAsRead, 
+  getCampaigns 
+} from "@/utils/api";
 
-const mockChats = [
-  {
-    id: "1",
-    name: "Ethan Lue",
-    avatar: "/images/ethan.png",
-    lastMessage: "Pay me double",
-    time: "12:15",
-    unread: 3,
-    seen: false,
-    messages: [
-      { id: 1, sender: "other", text: "I can handle it.", time: "14:00", day: "Yesterday" },
-      { id: 2, sender: "me", text: "Okay", time: "14:02", day: "Yesterday", status: "seen" },
-      { id: 3, sender: "other", text: "You’re on board", time: "09:02", day: "Today" },
-    ],
-  },
-  {
-    id: "2",
-    name: "Rufus",
-    avatar: "/images/rufus.png",
-    lastMessage: "Type shit",
-    time: "11:05",
-    unread: 0,
-    seen: true,
-    messages: [
-      { id: 1, sender: "other", text: "Yo!", time: "10:00", day: "Today" },
-      { id: 2, sender: "me", text: "Hey bro 👋", time: "10:05", day: "Today", status: "seen" },
-    ],
-  },
-  {
-    id: "3",
-    name: "Christiana Perry",
-    avatar: "/images/christiana.png",
-    lastMessage: "The last ad you made was splendid!",
-    time: "11:04",
-    unread: 0,
-    seen: true,
-    messages: [
-      { id: 1, sender: "other", text: "The last ad you made was splendid!", time: "11:00", day: "Today" },
-      { id: 2, sender: "me", text: "Thank you ❤️", time: "11:02", day: "Today", status: "seen" },
-    ],
-  },
-];
+// --- TYPES ---
+interface Message {
+  id: number | string;
+  sender: "me" | "other";
+  text: string;
+  time: string; // Display time (e.g. 10:30 AM)
+  day: string;  // Display day (e.g. Today)
+  status?: "sent" | "delivered" | "seen";
+  timestamp: Date; // Actual date object for sorting
+}
 
-function formatDay(date: Date) {
+interface ChatPreview {
+  id: string;
+  name: string;
+  avatar: string;
+  lastMessage: string;
+  timeDisplay: string;
+  unread: number;
+  timestamp: Date;
+}
+
+interface Campaign {
+  id: number;
+  name: string;
+  payment: boolean;
+}
+
+// --- HELPERS ---
+function formatMessageTime(dateString: string) {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function formatMessageDay(dateString: string) {
+  if (!dateString) return "";
+  const date = new Date(dateString);
   if (isToday(date)) return "Today";
   if (isYesterday(date)) return "Yesterday";
   return format(date, "MMMM d, yyyy");
 }
 
-export default function WebCreatorChatPage() {
-  const [chats, setChats] = useState(mockChats);
-  const [selectedChat, setSelectedChat] = useState<any>(null);
-  const [selectedCampaign, setSelectedCampaign] = useState(mockCampaigns[0]);
+export default function WebMessages() {
+  // State
+  const [chats, setChats] = useState<ChatPreview[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [messageInput, setMessageInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [showReactions, setShowReactions] = useState<{ [key: number]: boolean }>({});
-  const [loadingOlder, setLoadingOlder] = useState(false);
-
+  const [isLoadingChats, setIsLoadingChats] = useState(true);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  
+  // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  // Sort chat list by most recent activity
+  // 1. Initial Data Load
   useEffect(() => {
-    setChats((prev) =>
-      [...prev].sort(
-        (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()
-      )
-    );
+    async function initData() {
+      setIsLoadingChats(true);
+      
+      // Parallel Fetch
+      const [conversations, campaignsData] = await Promise.all([
+        getConversations(),
+        getCampaigns()
+      ]);
+
+      // Process Campaigns
+      if (campaignsData.success) {
+        const list = campaignsData.data.map((c: any) => ({
+          id: c.id,
+          name: c.title,
+          payment: (c.budget || 0) > 0,
+        }));
+        setCampaigns(list);
+        if (list.length > 0) setSelectedCampaign(list[0]);
+      }
+
+      // Process Chats
+      if (Array.isArray(conversations)) {
+        const formatted = conversations.map((c: any) => ({
+          id: c.id.toString(),
+          name: c.creator_email || "Unknown User", // Or creator_name if available
+          avatar: "/images/rufus.png", // Placeholder until backend sends avatar
+          lastMessage: c.last_message || "Start a conversation",
+          timeDisplay: formatMessageTime(c.last_message_time),
+          timestamp: new Date(c.last_message_time || Date.now()),
+          unread: c.unread_count || 0,
+        })).sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+        
+        setChats(formatted);
+      }
+      
+      setIsLoadingChats(false);
+    }
+
+    initData();
   }, []);
 
-  // Auto-scroll to latest message
+  // 2. Load Selected Chat Messages
+  useEffect(() => {
+    if (!selectedChatId) return;
+
+    async function loadChatDetails() {
+      setIsLoadingMessages(true);
+      const data = await getConversationDetail(Number(selectedChatId));
+      
+      if (data && data.messages) {
+        // Map messages
+        const mappedMsgs: Message[] = data.messages.map((m: any) => ({
+          id: m.id,
+          sender: m.sender_type === "business" ? "me" : "other",
+          text: m.content,
+          time: formatMessageTime(m.created_at),
+          day: formatMessageDay(m.created_at),
+          timestamp: new Date(m.created_at),
+          status: "read", // Assuming historical messages are read
+        }));
+        setMessages(mappedMsgs);
+
+        // Mark as read locally
+        setChats(prev => prev.map(c => c.id === selectedChatId ? { ...c, unread: 0 } : c));
+        
+        // Mark read on server
+        await markConversationAsRead(selectedChatId);
+      }
+      setIsLoadingMessages(false);
+    }
+
+    loadChatDetails();
+  }, [selectedChatId]);
+
+  // 3. Scroll to bottom on new message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [selectedChat?.messages]);
+  }, [messages]);
 
-  // Simulate typing indicator for demo
-  useEffect(() => {
-    if (selectedChat?.id === "1") {
-      setIsTyping(true);
-      const timeout = setTimeout(() => setIsTyping(false), 3000);
-      return () => clearTimeout(timeout);
-    } else {
-      setIsTyping(false);
-    }
-  }, [selectedChat]);
+  // Handlers
+  const handleSendMessage = async () => {
+    if (!messageInput.trim() || !selectedChatId) return;
 
-  // Handle selecting a chat → reset unread
-  const handleSelectChat = (chat: any) => {
-    setSelectedChat({ ...chat, unread: 0 });
-    setChats((prev) =>
-      prev.map((c) => (c.id === chat.id ? { ...c, unread: 0 } : c))
-    );
-  };
-
-  // Handle sending a new message
-  const handleSendMessage = () => {
-    if (!messageInput.trim()) return;
-
+    const tempId = Date.now();
     const now = new Date();
-    const time = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    const newMessage = {
-      id: Date.now(),
+    
+    // Optimistic UI Update
+    const newMessage: Message = {
+      id: tempId,
       sender: "me",
       text: messageInput,
-      time,
-      day: formatDay(now),
+      time: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      day: "Today",
+      timestamp: now,
       status: "sent",
     };
 
-    const updatedChats = chats.map((chat) =>
-      chat.id === selectedChat.id
-        ? {
-            ...chat,
-            messages: [...chat.messages, newMessage],
-            lastMessage: messageInput,
-            time,
-          }
-        : chat
-    );
-
-    setChats(updatedChats);
-
-    setSelectedChat((prev: any) => ({
-      ...prev,
-      messages: [...prev.messages, newMessage],
-      lastMessage: messageInput,
-      time,
-    }));
-
+    setMessages(prev => [...prev, newMessage]);
     setMessageInput("");
 
-    // Simulate delivery and seen
-    setTimeout(() => {
-      setChats((prev) =>
-        prev.map((chat) =>
-          chat.id === selectedChat.id
-            ? {
-                ...chat,
-                messages: chat.messages.map((m) =>
-                  m.id === newMessage.id ? { ...m, status: "delivered" } : m
-                ),
-              }
-            : chat
-        )
-      );
-    }, 1000);
-
-    setTimeout(() => {
-      setChats((prev) =>
-        prev.map((chat) =>
-          chat.id === selectedChat.id
-            ? {
-                ...chat,
-                messages: chat.messages.map((m) =>
-                  m.id === newMessage.id ? { ...m, status: "seen" } : m
-                ),
-              }
-            : chat
-        )
-      );
-    }, 2000);
-  };
-
-  // Handle emoji select (demo only)
-  const handleEmojiSelect = (emoji: string) => {
-    setMessageInput((prev) => prev + emoji);
-    setShowEmojiPicker(false);
-  };
-
-  // Handle reaction
-  const toggleReaction = (msgId: number) => {
-    setShowReactions((prev) => ({
-      ...prev,
-      [msgId]: !prev[msgId],
-    }));
-  };
-
-  // Infinite scroll mock
-  const handleScroll = () => {
-    if (!messagesContainerRef.current) return;
-    if (messagesContainerRef.current.scrollTop === 0 && !loadingOlder) {
-      setLoadingOlder(true);
-      setTimeout(() => {
-        const olderMessage = {
-          id: Date.now(),
-          sender: "other",
-          text: "This is an older message (loaded via infinite scroll).",
-          time: "08:00",
-          day: "Yesterday",
-        };
-        setSelectedChat((prev: any) => ({
-          ...prev,
-          messages: [olderMessage, ...prev.messages],
-        }));
-        setLoadingOlder(false);
-      }, 1500);
+    try {
+      const res = await sendMessage(selectedChatId, newMessage.text);
+      // Update ID with server ID if needed
+      setMessages(prev => prev.map(m => m.id === tempId ? { ...m, id: res.id, status: "delivered" } : m));
+    } catch (err) {
+      console.error("Message failed", err);
+      // Ideally show error state on message
     }
   };
 
-  const filteredChats = chats.filter(
-    (chat) =>
-      chat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      chat.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
+  const activeChat = chats.find(c => c.id === selectedChatId);
+  const filteredChats = chats.filter(c => 
+    c.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
-    <main className="min-h-screen bg-black text-white bg-[url('/images/backgroundImage.png')] bg-cover bg-center">
-      <Navbar />
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
+      <Sidebar />
 
-      <div className="flex h-[calc(100vh-64px)]">
-        {/* Left Sidebar */}
-        <aside className="w-1/3 bg-[#ffff] border-r border-gray-700 flex flex-col">
-          {/* Campaigns */}
-          <div className="p-4">
-            <h2 className="text-lg font-semibold mb-2">Campaigns</h2>
-            <div className="flex gap-2 overflow-x-auto">
-              {mockCampaigns.map((c) => (
-                <div
+      {/* Main Content Area */}
+      <div className="flex flex-1 flex-col md:flex-row md:ml-64 w-full h-full">
+        
+        {/* LEFT SIDEBAR (List) */}
+        <aside className={`
+          bg-white border-r border-gray-200 flex flex-col w-full md:w-1/3 h-full
+          ${selectedChatId ? "hidden md:flex" : "flex"}
+        `}>
+          {/* Campaigns Filter */}
+          <div className="p-4 border-b border-gray-100 flex-shrink-0">
+            <h2 className="text-lg font-semibold mb-3 text-gray-800">Campaigns</h2>
+            <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-thin">
+              {campaigns.map((c) => (
+                <button
                   key={c.id}
                   onClick={() => setSelectedCampaign(c)}
-                  className={`px-3 py-2 rounded-xl cursor-pointer whitespace-nowrap ${
-                    selectedCampaign.id === c.id
+                  className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                    selectedCampaign?.id === c.id
                       ? "bg-[#823A5E] text-white"
-                      : "bg-gray-700 text-gray-200"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >
-                  {c.payment && (
-                    <span className="text-xs bg-purple-300 text-purple-800 px-2 py-0.5 rounded-full mr-2">
-                      Payment
-                    </span>
-                  )}
                   {c.name}
-                </div>
+                </button>
               ))}
             </div>
           </div>
 
-          {/* Chats */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            <h2 className="text-lg font-semibold mb-2 text-black">Chats</h2>
+          {/* Chat List */}
+          <div className="flex-1 overflow-y-auto p-4">
             <input
               type="text"
               placeholder="Search chats..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full mb-3 px-3 py-2 rounded-lg bg-[#aaa] text-white text-sm focus:outline-none"
+              className="w-full mb-4 px-4 py-2 rounded-xl bg-gray-100 text-black text-sm focus:outline-none focus:ring-2 focus:ring-[#823A5E]/20"
             />
-            {filteredChats.map((chat) => (
-              <div
-                key={chat.id}
-                onClick={() => handleSelectChat(chat)}
-                className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer ${
-                  selectedChat?.id === chat.id ? "bg-[#7a7373]" : "hover:bg-[#a3a3a3]"
-                }`}
-              >
-                <Image
-                  src={chat.avatar}
-                  alt={chat.name}
-                  width={40}
-                  height={40}
-                  className="rounded-full"
-                />
-                <div className="flex-1">
-                  <p className="font-medium text-black">{chat.name}</p>
-                  <p className="text-xs text-[#4d4d4d] truncate">{chat.lastMessage}</p>
-                </div>
-                <div className="text-right text-xs text-gray-400">
-                  <p>{chat.time}</p>
-                  {chat.unread > 0 && (
-                    <span className="bg-[#896574] text-white text-[10px] px-2 py-1 rounded-full">
-                      {chat.unread}
-                    </span>
-                  )}
-                </div>
+            
+            {isLoadingChats ? (
+              <div className="flex justify-center py-10"><Loader2 className="animate-spin text-gray-400" /></div>
+            ) : (
+              <div className="space-y-2">
+                {filteredChats.map((chat) => (
+                  <div
+                    key={chat.id}
+                    onClick={() => setSelectedChatId(chat.id)}
+                    className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${
+                      selectedChatId === chat.id ? "bg-[#823A5E]/10 border border-[#823A5E]/20" : "hover:bg-gray-50 border border-transparent"
+                    }`}
+                  >
+                    <Image src={chat.avatar} alt={chat.name} width={48} height={48} className="rounded-full object-cover" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-baseline mb-1">
+                        <p className="font-semibold text-gray-900 truncate">{chat.name}</p>
+                        <span className="text-xs text-gray-500">{chat.timeDisplay}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <p className="text-sm text-gray-500 truncate w-4/5">{chat.lastMessage}</p>
+                        {chat.unread > 0 && (
+                          <span className="bg-[#823A5E] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
+                            {chat.unread}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         </aside>
 
-        {/* Right Chat Pane */}
-        <section className="flex-1 flex flex-col bg-[#ffffff]">
-          {selectedChat ? (
+        {/* RIGHT CHAT WINDOW */}
+        <section className={`
+          flex-col h-full flex-1 bg-white
+          ${selectedChatId ? "flex" : "hidden md:flex"}
+        `}>
+          {selectedChatId && activeChat ? (
             <>
-              {/* Chat Header */}
-              <div className="flex items-center justify-between p-4 border-b border-gray-700">
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-white/80 backdrop-blur-sm z-10">
                 <div className="flex items-center gap-3">
-                  <Image
-                    src={selectedChat.avatar}
-                    alt={selectedChat.name}
-                    width={40}
-                    height={40}
-                    className="rounded-full"
-                  />
+                  <button onClick={() => setSelectedChatId(null)} className="md:hidden p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-full">
+                    <ArrowLeft className="w-5 h-5" />
+                  </button>
+                  <Image src={activeChat.avatar} alt={activeChat.name} width={40} height={40} className="rounded-full" />
                   <div>
-                    <p className="font-semibold text-black">{selectedChat.name}</p>
-                    <p className="text-xs text-gray-400">
-                      {isTyping ? "Typing..." : `Last seen ${selectedChat.time}`}
+                    <h3 className="font-bold text-gray-900">{activeChat.name}</h3>
+                    <p className="text-xs text-green-600 font-medium flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Online
                     </p>
                   </div>
                 </div>
-                <Phone className="w-5 h-5 text-black cursor-pointer" aria-label="Call" />
+                
+                <button 
+                  onClick={() => setShowPaymentModal(true)} 
+                  className="bg-[#823A5E] text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-[#6d2e4f] shadow-sm transition-transform active:scale-95"
+                >
+                  Make Payment
+                </button>
               </div>
 
-              {/* Messages */}
-              <div
-                className="flex-1 overflow-y-auto p-4 space-y-4"
-                ref={messagesContainerRef}
-                onScroll={handleScroll}
-              >
-                {loadingOlder && (
-                  <p className="text-center text-gray-500 text-sm">Loading older messages...</p>
-                )}
-                {selectedChat.messages.map((msg: any, idx: number) => {
-                  const showDayDivider =
-                    idx === 0 || msg.day !== selectedChat.messages[idx - 1].day;
-
-                  return (
-                    <div key={msg.id}>
-                      {showDayDivider && (
-                        <div className="text-center my-2">
-                          <span className="px-3 py-1 text-xs rounded-full bg-[#896574] text-[#5E3345]">
-                            {msg.day}
-                          </span>
-                        </div>
-                      )}
-                      <div
-                        className={`flex ${
-                          msg.sender === "me" ? "justify-end" : "justify-start"
-                        }`}
-                      >
-                        <div
-                          className={`relative max-w-xs px-3 py-2 rounded-lg text-sm ${
-                            msg.sender === "me"
-                              ? "bg-[#823A5E] text-white"
-                              : "bg-gray-700 text-white"
-                          }`}
-                          onClick={() => toggleReaction(msg.id)}
-                        >
-                          {msg.text}
-                          <div className="text-[10px] text-gray-300 mt-1 text-right flex items-center justify-end gap-1">
-                            {msg.time}
-                            {msg.sender === "me" && (
-                              <span>
-                                {msg.status === "sent" && "✓"}
-                                {msg.status === "delivered" && "✓✓"}
-                                {msg.status === "seen" && (
-                                  <span className="text-blue-400">✓✓</span>
-                                )}
-                              </span>
-                            )}
+              {/* Messages Area */}
+              <div className="flex-1 overflow-y-auto p-4 bg-gray-50 space-y-6">
+                {isLoadingMessages ? (
+                  <div className="flex justify-center py-10"><Loader2 className="animate-spin text-gray-400" /></div>
+                ) : (
+                  messages.map((msg, index) => {
+                    const isNewDay = index === 0 || msg.day !== messages[index - 1].day;
+                    const isMe = msg.sender === "me";
+                    return (
+                      <div key={msg.id}>
+                        {isNewDay && (
+                          <div className="flex justify-center mb-4">
+                            <span className="bg-gray-200 text-gray-600 text-xs px-3 py-1 rounded-full font-medium">
+                              {msg.day}
+                            </span>
                           </div>
-                          {showReactions[msg.id] && (
-                            <div className="absolute -top-8 left-0 flex gap-2 bg-gray-900 p-1 rounded-lg shadow">
-                              <button onClick={() => handleEmojiSelect("👍")}>👍</button>
-                              <button onClick={() => handleEmojiSelect("😂")}>😂</button>
-                              <button onClick={() => handleEmojiSelect("❤️")}>❤️</button>
+                        )}
+                        <div className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+                          <div className={`max-w-[75%] px-4 py-2.5 rounded-2xl shadow-sm text-sm relative group ${
+                            isMe ? "bg-[#823A5E] text-white rounded-br-none" : "bg-white text-gray-800 rounded-bl-none border border-gray-100"
+                          }`}>
+                            <p>{msg.text}</p>
+                            <div className={`text-[10px] mt-1 text-right opacity-70 ${isMe ? "text-pink-100" : "text-gray-400"}`}>
+                              {msg.time} {isMe && (msg.status === "sent" ? "✓" : "✓✓")}
                             </div>
-                          )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Composer */}
-              <div className="p-4 border-t border-gray-700 flex items-center gap-3">
-                <Paperclip className="w-5 h-5 text-black cursor-pointer" />
-                <Smile
-                  className="w-5 h-5 text-black cursor-pointer"
-                  onClick={() => setShowEmojiPicker((prev) => !prev)}
-                />
-                {showEmojiPicker && (
-                  <div className="absolute bottom-16 left-1/2 bg-gray-900 p-2 rounded-lg flex gap-2">
-                    <button onClick={() => handleEmojiSelect("😀")}>😀</button>
-                    <button onClick={() => handleEmojiSelect("😂")}>😂</button>
-                    <button onClick={() => handleEmojiSelect("❤️")}>❤️</button>
-                    <button onClick={() => handleEmojiSelect("👍")}>👍</button>
-                  </div>
-                )}
-                <input
-                  type="text"
-                  placeholder="Say something"
-                  value={messageInput}
-                  onChange={(e) => setMessageInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                  className="flex-1 px-4 py-2 rounded-2xl bg-[#333333] text-white focus:outline-none"
-                />
-                {messageInput.trim() === "" ? (
-                  <Mic className="w-5 h-5 text-black cursor-pointer" />
+              {/* Input Area */}
+              <div className="p-4 bg-white border-t border-gray-100 flex items-center gap-3">
+                <button className="p-2 text-gray-400 hover:text-[#823A5E] transition-colors">
+                  <Paperclip className="w-5 h-5" />
+                </button>
+                <div className="flex-1 relative">
+                  <input
+                    type="text"
+                    value={messageInput}
+                    onChange={(e) => setMessageInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                    placeholder="Type your message..."
+                    className="w-full bg-gray-100 text-gray-900 rounded-full px-4 py-2.5 pr-10 focus:outline-none focus:ring-2 focus:ring-[#823A5E]/20"
+                  />
+                  <button className="absolute right-3 top-2.5 text-gray-400 hover:text-[#823A5E]">
+                    <Smile className="w-5 h-5" />
+                  </button>
+                </div>
+                {messageInput.trim() ? (
+                  <button onClick={handleSendMessage} className="p-2.5 bg-[#823A5E] text-white rounded-full hover:bg-[#6d2e4f] shadow-md transition-transform hover:scale-105">
+                    <Send className="w-5 h-5" />
+                  </button>
                 ) : (
-                  <button
-                    onClick={handleSendMessage}
-                    className="bg-[#823A5E] p-2 rounded-full hover:bg-[#9c4d73]"
-                  >
-                    <Send className="w-5 h-5 text-white" />
+                  <button className="p-2.5 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200">
+                    <Mic className="w-5 h-5" />
                   </button>
                 )}
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-gray-400">
-              <p>Select a chat to start messaging</p>
+            <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 text-center p-8">
+              <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
+                <Send className="w-8 h-8 text-[#823A5E]" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">Your Messages</h3>
+              <p className="text-gray-500 max-w-sm mt-2">
+                Select a chat from the left to view conversations with creators regarding your campaigns.
+              </p>
             </div>
           )}
         </section>
       </div>
-    </main>
+
+      {/* Payment Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowPaymentModal(false)} />
+          <div className="relative z-10 w-full max-w-md animate-in fade-in zoom-in duration-200">
+            <PayStackPayment onClose={() => setShowPaymentModal(false)} />
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
-

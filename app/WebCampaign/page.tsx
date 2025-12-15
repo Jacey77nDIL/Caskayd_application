@@ -1,26 +1,26 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Navbar from "@/components/Navbar";
+import { useSearchParams } from "next/navigation";
 import { Inter } from "next/font/google";
+import { Upload, Instagram, Music, Loader2 } from "lucide-react";
+import { toast, Toaster } from "react-hot-toast";
+
+// Components
+import Sidebar from "@/components/Sidebar";
 import Card from "@/components/Card";
 import Modal from "@/components/Modal";
-import { useRouter } from "next/navigation";
-import { Upload, Instagram, Music } from "lucide-react";
-import Image from "next/image";
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+import CreatorPickerModal from "@/components/CreatorPickerModal";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
-type Campaign = {
-  id: number;
-  title: string;
-  date: string;
-  image?: string;
-  options?: {
-    dropdown1: string; // niche
-    dropdown2: string; // platform
-    dropdown3: string; // reach
-  };
-};
+// API & Auth
+import { getCampaigns, createCampaign, deleteCampaign } from "@/utils/api";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -28,374 +28,405 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-export default function WebCampaignPage() {
+// --- TYPES ---
+
+// Data shape from API (reading)
+interface ApiCampaignData {
+  id: number;
+  title: string;
+  created_at: string;
+  brief_file_url?: string;
+  platform?: string;
+  reach?: string;
+  filters?: {
+    niche_ids?: number[];
+  };
+}
+
+// Data shape for API (creating response)
+interface CreateCampaignResponse {
+  campaign: ApiCampaignData;
+  recommendations: Creator[];
+}
+
+// Frontend Display shape
+type Campaign = {
+  id: number;
+  title: string;
+  date: string;
+  image?: string;
+  options?: {
+    dropdown1: string;
+    dropdown2: string;
+    dropdown3: string;
+  };
+};
+
+// Creator shape
+interface Creator {
+  id: number;
+  name: string;
+  followers_count: number;
+  engagement_rate: string;
+  niches: { id: number; name: string }[];
+}
+
+// --- MAPPINGS ---
+const NICHE_MAP: Record<string, number> = {
+  "Technology": 1,
+  "Healthcare": 2,
+  "Finance": 3,
+  "Retail": 4,
+  "Fashion": 5,
+};
+
+export default function WebCampaign() {
+  const searchParams = useSearchParams();
+
+  // --- STATE ---
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const router = useRouter();
-
-  // Form + UI states
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [apiError, setApiError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-
-  // Modal states
-  const [showModalStep1, setShowModalStep1] = useState(false);
-  const [showModalStep3, setShowModalStep3] = useState(false);
-
-  // Modal data states
-  const [campaignName, setCampaignName] = useState("");
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [niche, setNiche] = useState("");
-  const [platform, setPlatform] = useState("");
-  const [reach, setReach] = useState("");
-
-  // Loading states
   const [isLoading, setIsLoading] = useState(true);
-  const [showRedirectLoader, setShowRedirectLoader] = useState(false); // 🔹 new
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Fetch campaigns
+  // Modal Visibility
+  const [step, setStep] = useState<0 | 1 | 2>(0);
+  const [showCreatorPicker, setShowCreatorPicker] = useState(false);
+  const [createdCampaignId, setCreatedCampaignId] = useState<number | null>(null);
+  
+  const [recommendedCreators, setRecommendedCreators] = useState<Creator[]>([]);
+
+  // Form Data
+  const [formData, setFormData] = useState({
+    title: "",
+    previewImage: null as string | null,
+    niche: "",
+    platform: "",
+    reach: "",
+  });
+
+  // --- EFFECTS ---
   useEffect(() => {
-    async function fetchCampaigns() {
-      try {
-        setIsLoading(true);
-        const res = await fetch("/api/campaigns");
-        if (!res.ok) throw new Error("Failed to load campaigns");
-        const data = await res.json();
-        setCampaigns(data);
-      } catch (error: any) {
-        setApiError(error.message);
-      } finally {
+    if (searchParams.get("openAdd") === "true") {
+      setStep(1);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    let mounted = true;
+    const loadData = async () => {
+      setIsLoading(true);
+      const res = await getCampaigns();
+      
+      if (mounted) {
+        if (res.success && Array.isArray(res.data)) {
+          const mapped: Campaign[] = res.data.map((c: ApiCampaignData) => ({
+            id: c.id,
+            title: c.title,
+            date: c.created_at ? new Date(c.created_at).toLocaleDateString() : "Just now",
+            image: c.brief_file_url || "/placeholder.png",
+            options: {
+              dropdown1: c.filters?.niche_ids?.[0]?.toString() || "General",
+              dropdown2: c.platform || "Any",
+              dropdown3: c.reach || "Any",
+            },
+          }));
+          setCampaigns(mapped);
+        } else {
+          setCampaigns([]);
+        }
         setIsLoading(false);
       }
-    }
-    fetchCampaigns();
+    };
+    loadData();
+    return () => { mounted = false; };
   }, []);
 
-  // File upload handler
+  // --- HANDLERS ---
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => setPreviewImage(reader.result as string);
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, previewImage: reader.result as string }));
+      };
       reader.readAsDataURL(file);
     }
   };
 
-  // Reset form
-  const resetForm = () => {
-    setCampaignName("");
-    setPreviewImage(null);
-    setNiche("");
-    setPlatform("");
-    setReach("");
-    setMessage(null);
+  const updateForm = (key: string, value: string) => {
+    setFormData(prev => ({ ...prev, [key]: value }));
   };
 
-  // Step 1 validation
-  const validateForm1 = (): boolean => {
-    if (!campaignName.trim()) {
-      setMessage("Please enter your campaign name");
-      return false;
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("Are you sure you want to delete this campaign?")) return;
+    
+    setCampaigns(prev => prev.filter(c => c.id !== id));
+    toast.success("Campaign deleted");
+
+    const res = await deleteCampaign(id);
+    if (!res.success) {
+      toast.error("Failed to delete campaign on server.");
+      window.location.reload(); 
     }
-    if (!previewImage) {
-      setMessage("Please add an image to your campaign");
-      return false;
-    }
-    setMessage(null);
-    return true;
   };
 
-  // Step 1 submit
-  const handleSubmit1 = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm1()) return;
-    setMessage(null);
-    setShowModalStep1(false);
-    setShowModalStep3(true);
-  };
-
-  // Step 3 validation
-  const validateForm3 = (): boolean => {
-    if (!niche.trim()) {
-      setMessage("Please select a niche for your campaign");
-      return false;
-    }
-    if (!platform.trim()) {
-      setMessage("Please select a platform for your campaign");
-      return false;
-    }
-    if (!reach.trim()) {
-      setMessage("Please select a reach for your campaign");
-      return false;
-    }
-    setMessage(null);
-    return true;
-  };
-
-  // Final submit
   const handleFinalSubmit = async () => {
-    if (!validateForm3()) return;
+    if (!formData.title || !formData.previewImage || !formData.niche || !formData.platform || !formData.reach) {
+      setError("Please fill in all fields.");
+      toast.error("Please fill in all fields to continue.");
+      return;
+    }
 
     setIsSubmitting(true);
-    setApiError(null);
+    setError(null);
+    
+    const toastId = toast.loading("Creating campaign...");
 
-    const newCampaign = {
-      title: campaignName,
-      date: new Date().toLocaleDateString(),
-      image: previewImage ?? "",
-      options: {
-        dropdown1: niche,
-        dropdown2: platform,
-        dropdown3: reach,
+    const nicheId = NICHE_MAP[formData.niche] || 1; 
+    
+    const payload = {
+      title: formData.title,
+      description: `Campaign for ${formData.niche} on ${formData.platform}`,
+      brief: "Generated via Web App",
+      brief_file_url: " ", 
+      budget: 1000, 
+      start_date: new Date().toISOString(),
+      end_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+      filters: {
+        location: "Nigeria",
+        min_followers: 1000,
+        max_followers: 1000000,
+        engagement_rate: 0.05,
+        niche_ids: [nicheId],
       },
     };
 
     try {
-      const res = await fetch("/api/campaigns", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newCampaign),
-      });
+        const res = await createCampaign(payload);
 
-      if (!res.ok) throw new Error("Failed to save campaign");
+        if (res.success && res.data) {
+          // 1. FIXED: Explicit Cast here to tell TS the shape
+          const { campaign, recommendations } = res.data as CreateCampaignResponse;
+          
+          toast.success("Campaign created successfully!", { id: toastId });
 
-      const saved = await res.json();
-      setCampaigns((prev) => [...prev, saved]);
-
-      // Reset form & close modal
-      resetForm();
-      setShowModalStep3(false);
-
-      // 🔹 Show redirect loader
-      setShowRedirectLoader(true);
-
-      // Wait 3s then redirect
-      setTimeout(() => {
-        // ✅ Redirect directly with campaignId
-        setShowRedirectLoader(false);
-        router.push(`/WebExplore?campaignId=${saved.id}`);
-      }, 3000);
-    } catch (err: any) {
-      setApiError(err.message);
+          if (campaign) {
+            const newCamp: Campaign = {
+              id: campaign.id,
+              title: campaign.title,
+              date: new Date().toLocaleDateString(),
+              image: formData.previewImage || "",
+              options: {
+                dropdown1: formData.niche,
+                dropdown2: formData.platform,
+                dropdown3: formData.reach
+              }
+            };
+            setCampaigns(prev => [...prev, newCamp]);
+            
+            setCreatedCampaignId(campaign.id);
+            setRecommendedCreators(recommendations || []);
+            
+            setStep(0); 
+            setShowCreatorPicker(true);
+            
+            setFormData({ title: "", previewImage: null, niche: "", platform: "", reach: "" });
+          }
+        } else {
+          toast.error(res.message || "Failed to create campaign", { id: toastId });
+          setError(res.message || "Failed to create campaign");
+        }
+    } catch (err) {
+        toast.error("Something went wrong.", { id: toastId });
+        console.error(err);
     } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Delete campaign
-  const handleDelete = async (id: number) => {
-    try {
-      const res = await fetch("/api/campaigns", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      });
-      if (!res.ok) throw new Error("Failed to delete campaign");
-      setCampaigns((prev) => prev.filter((c) => c.id !== id));
-    } catch (err: any) {
-      alert(err.message);
+        setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-black text-white bg-[url('/images/backgroundImage.png')] bg-cover bg-center relative">
-      <Navbar />
+    <div className="flex min-h-screen bg-gray-50 text-gray-900">
+      <Toaster position="top-center" reverseOrder={false} />
 
-      {/* 🔹 Redirect Loader Overlay */}
-      {showRedirectLoader && (
-        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
-          <div className="flex flex-col items-center">
-            <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-            <p className="mt-4 text-white text-xl font-semibold">Redirecting...</p>
+      <Sidebar />
+
+      <div className="flex-1 flex flex-col md:ml-64">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 sm:px-8 py-6 gap-4">
+          <h1 className={`${inter.className} text-3xl font-bold text-[#691D3D]`}>Campaigns</h1>
+          <button
+            onClick={() => setStep(1)}
+            className={`${inter.className} font-medium text-xl transition-transform duration-300 hover:scale-105 text-[#691D3D] px-5 py-2 rounded-2xl border border-[#691D3D]/10 bg-white hover:shadow-md`}
+          >
+            ADD +
+          </button>
+        </div>
+
+        <div className="mx-4 sm:mx-6 md:mx-8 border-t border-[#BDBDBD]" />
+
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-8 pb-10 mt-8">
+          {isLoading ? (
+            <div className="flex justify-center items-center h-40">
+              <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+            </div>
+          ) : campaigns.length > 0 ? (
+            <div className="grid grid-cols-1 gap-6">
+              {campaigns.map((c) => (
+                <Card
+                  key={c.id}
+                  id={c.id}
+                  title={c.title}
+                  date={c.date}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-gray-400 mt-10">
+              <p className="text-xl font-medium">No campaigns found.</p>
+              <p className="text-sm">Create your first campaign to get started!</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* STEP 1 MODAL */}
+      <Modal
+        isOpen={step === 1}
+        onClose={() => setStep(0)}
+        title="Create Campaign — Step 1"
+      >
+        <div className="px-4 py-4 space-y-4">
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            <div className="h-2 rounded-full bg-[#823A5E]" />
+            <div className="h-2 rounded-full bg-gray-200" />
           </div>
-        </div>
-      )}
 
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <h1 className={`${inter.className} mt-5 ml-7 text-3xl text-white font-bold`}>
-          Campaigns
-        </h1>
-        <button
-          onClick={() => setShowModalStep1(true)}
-          className={`mr-10 font-medium ${inter.className} text-2xl transition-transform duration-200 hover:scale-110 border border-white py-2 px-4 rounded-2xl`}
-        >
-          ADD +
-        </button>
-      </div>
-
-      {/* Divider */}
-      <div className="ml-5 items-center w-[96%] h-[1px] bg-white my-4"></div>
-
-      {/* API error */}
-      {apiError && <p className="text-red-500 ml-5">{apiError}</p>}
-
-      {/* Campaigns grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-10 ml-5">
-        {isLoading ? (
-          <p className="text-gray-400 text-2xl font-extrabold col-span-full">Loading campaigns...</p>
-        ) : campaigns.length > 0 ? (
-          campaigns.map((campaign) => (
-            <Card
-              key={campaign.id}
-              id={campaign.id}
-              title={campaign.title}
-              date={campaign.date}
-              onDelete={handleDelete}
-            />
-          ))
-        ) : (
-          <p className={`${inter.className} text-gray-400 text-2xl font-extrabold col-span-full`}>
-            No campaigns yet. Add one!
-          </p>
-        )}
-      </div>
-      {/* Step 1 */}
-      <Modal isOpen={showModalStep1} onClose={() => {setShowModalStep1(false);resetForm();}}>
-        <div className="ml-10 grid grid-cols-2 md:grid-cols-2">
-        <div className="items-center w-[80%] h-[10px] rounded-2xl bg-[#823A5E]  "></div>
-        <div className="items-center w-[80%] h-[10px] rounded-2xl bg-[#ACA2A7]"></div>
-        </div>
-        <form onSubmit={handleSubmit1} className="w-full max-h-[80vh] overflow-y-auto px-8 py-6 no-scrollbar">
           <div>
-
-            <label htmlFor="campaignName" className={`${inter.className} text-black font-medium block mb-1 text-left`}>
-              Campaign name
-            </label>
-            <input id="campaignName" type="text"value={campaignName} onChange={(e) => setCampaignName(e.target.value)}placeholder="Pick a campaign name" className={`text-black w-full border ${inter.className} rounded-lg px-3 py-2 border-[#5E3345] focus:outline-none focus:ring-2 focus:ring-[#843163]`}/>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Campaign name</label>
+            <input
+              value={formData.title}
+              onChange={(e) => updateForm("title", e.target.value)}
+              className="w-full border border-[#5E3345] rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-[#823A5E]"
+              placeholder="Ex: Summer Launch"
+            />
           </div>
 
-          {/* Image input field */}
-          <div className="mt-4">
-            <label className={`${inter.className} text-black block mb-1 text-left`}>
-              Upload brief
-            </label>
-          </div>
-          {/*The thing am testing*/}
-          <div className="w-full border-2 border-dashed rounded-lg flex flex-col items-center justify-center p-6">
-              {previewImage ? (
-                <Image src={previewImage} alt="Preview" width={200} height={200} className="rounded-md"/>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Upload brief</label>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center hover:bg-gray-50 transition-colors">
+              {formData.previewImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={formData.previewImage} alt="Preview" className="h-32 object-contain rounded" />
               ) : (
-                <Upload className="w-12 h-12 text-gray-500" />
+                <Upload className="w-10 h-10 text-gray-400" />
               )}
-              <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" id="fileUpload"/>
-              <label htmlFor="fileUpload" className="mt-2 text-sm text-blue-600 cursor-pointer">
-                {previewImage ? "Change Image" : "Upload Image"}
+              <input type="file" id="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+              <label htmlFor="file" className="mt-2 text-[#823A5E] font-medium cursor-pointer hover:underline">
+                {formData.previewImage ? "Change Image" : "Click to upload"}
               </label>
             </div>
-          {message && <p className="text-red-500 mt-2">{message}</p>}
-          {/*Next Button*/}
-          <div className="w-full mt-8 flex justify-center">
-            <button type="submit" className={`${inter.className} bg-[#823A5E] text-white px-10 py-2 rounded-2xl hover:bg-[#6d2e4f] transition-transform duration-200 hover:scale-110`}>
+          </div>
+
+          <div className="flex justify-center pt-2">
+            <button
+              onClick={() => {
+                if (!formData.title || !formData.previewImage) {
+                  toast.error("Please complete all fields");
+                  return;
+                }
+                setStep(2);
+              }}
+              className="bg-[#823A5E] text-white px-8 py-2 rounded-xl hover:scale-105 transition-transform"
+            >
               Next
             </button>
           </div>
-        </form>
+        </div>
       </Modal>
-      {/* Step 2 */}
-      
 
-{/* Step 3 */}
-<Modal
-  isOpen={showModalStep3}
-  onClose={() => {
-    setShowModalStep3(false);
-    setShowModalStep1(true);
-  }}
->
-  <div className="ml-10 grid grid-cols-2 md:grid-cols-2">
-    <div className="items-center w-[80%] h-[10px] rounded-2xl bg-[#823A5E]" />
-    <div className="items-center w-[80%] h-[10px] rounded-2xl bg-[#823A5E]" />
-  </div>
-
-  <div className="w-full max-h-[80vh] overflow-y-auto px-8 py-6 no-scrollbar">
-    <h2 className={`${inter.className} text-2xl font-bold text-center text-black`}>
-      Who are your ideal creators?
-    </h2>
-
-    {/* Dropdowns */}
-    <div className="flex flex-col items-center justify-center p-6 md:p-12 overflow-y-auto space-y-4">
-      
-      {/* Niche */}
-      <div className="flex flex-col w-full">
-        <label className={`${inter.className} text-black block mb-1 text-left`}>
-          Niche
-        </label>
-        <Select value={niche} onValueChange={(value) => setNiche(value)}>
-          <SelectTrigger className="w-full border rounded-lg text-black px-3 py-2 bg-[#C7B5C8]">
-            <SelectValue placeholder="None selected" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Technology">Technology</SelectItem>
-            <SelectItem value="Healthcare">Healthcare</SelectItem>
-            <SelectItem value="Finance">Finance</SelectItem>
-            <SelectItem value="Retail">Retail</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Platform (with icons) */}
-      <div className="flex flex-col w-full">
-        <label className={`${inter.className} text-black block mb-1 text-left`}>
-          Platform
-        </label>
-        <Select value={platform} onValueChange={(value) => setPlatform(value)}>
-          <SelectTrigger className="w-full border rounded-lg text-black px-3 py-2 bg-[#C7B5C8]">
-            <SelectValue placeholder="None selected" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Instagram">
-              <div className="flex items-center gap-2">
-                <Instagram className="w-4 h-4 text-pink-500" />
-                Instagram
-              </div>
-            </SelectItem>
-            
-            <SelectItem value="TikTok">
-              <div className="flex items-center gap-2">
-                <Music className="w-4 h-4 text-black" />
-                TikTok
-              </div>
-            </SelectItem>
-            
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Reach */}
-      <div className="flex flex-col w-full">
-        <label className={`${inter.className} text-black block mb-1 text-left`}>
-          Reach
-        </label>
-        <Select value={reach} onValueChange={(value) => setReach(value)}>
-          <SelectTrigger className="w-full border rounded-lg text-black px-3 py-2 bg-[#C7B5C8]">
-            <SelectValue placeholder="None selected" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="1k-10k">1k - 10k</SelectItem>
-            <SelectItem value="10k-100k">10k - 100k</SelectItem>
-            <SelectItem value="100k-1M">100k - 1M</SelectItem>
-            <SelectItem value="1M+">1M+</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-    </div>
-
-    {/* Error message */}
-    {message && <p className="text-red-500 mt-2">{message}</p>}
-
-    {/* Submit button */}
-    <div className="w-full mt-8 flex justify-center">
-      <button
-        onClick={handleFinalSubmit}
-        disabled={isSubmitting}
-        className={`${inter.className} bg-[#823A5E] text-white px-10 py-2 rounded-2xl hover:bg-[#6d2e4f] transition-transform duration-200 hover:scale-110 disabled:opacity-50`}
+      {/* STEP 2 MODAL */}
+      <Modal
+        isOpen={step === 2}
+        onClose={() => setStep(0)}
+        title="Who are your ideal creators?"
       >
-        {isSubmitting ? "Submitting..." : "Submit"}
-      </button>
-    </div>
-  </div>
-</Modal>
+        <div className="px-4 py-4 space-y-5">
+           <div className="grid grid-cols-2 gap-2 mb-4">
+            <div className="h-2 rounded-full bg-[#823A5E]" />
+            <div className="h-2 rounded-full bg-[#823A5E]" />
+          </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Niche</label>
+            <Select value={formData.niche} onValueChange={(val) => updateForm("niche", val)}>
+              <SelectTrigger className="w-full border-[#5E3345] bg-[#FCF4F3] text-black">
+                <SelectValue placeholder="Select Niche" />
+              </SelectTrigger>
+              <SelectContent className="bg-white">
+                {Object.keys(NICHE_MAP).map((niche) => (
+                  <SelectItem key={niche} value={niche}>{niche}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Platform</label>
+            <Select value={formData.platform} onValueChange={(val) => updateForm("platform", val)}>
+              <SelectTrigger className="w-full border-[#5E3345] bg-[#FCF4F3] text-black">
+                <SelectValue placeholder="Select Platform" />
+              </SelectTrigger>
+              <SelectContent className="bg-white">
+                <SelectItem value="Instagram">
+                  <div className="flex items-center gap-2"><Instagram className="w-4 h-4" /> Instagram</div>
+                </SelectItem>
+                <SelectItem value="TikTok">
+                  <div className="flex items-center gap-2"><Music className="w-4 h-4" /> TikTok</div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Reach</label>
+            <Select value={formData.reach} onValueChange={(val) => updateForm("reach", val)}>
+              <SelectTrigger className="w-full border-[#5E3345] bg-[#FCF4F3] text-black">
+                <SelectValue placeholder="Select Follower Range" />
+              </SelectTrigger>
+              <SelectContent className="bg-white">
+                <SelectItem value="1k-10k">Nano (1k - 10k)</SelectItem>
+                <SelectItem value="10k-100k">Micro (10k - 100k)</SelectItem>
+                <SelectItem value="100k-1M">Macro (100k - 1M)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+
+          <div className="flex justify-between pt-4">
+            <button onClick={() => setStep(1)} className="text-gray-500 hover:text-black">
+              Back
+            </button>
+            <button
+              onClick={handleFinalSubmit}
+              disabled={isSubmitting}
+              className="bg-[#823A5E] text-white px-8 py-2 rounded-xl hover:scale-105 transition-transform disabled:opacity-50 flex items-center gap-2"
+            >
+              {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+              {isSubmitting ? "Creating..." : "Submit"}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <CreatorPickerModal
+        isOpen={showCreatorPicker}
+        onClose={() => setShowCreatorPicker(false)}
+        campaignId={createdCampaignId ?? 0}
+        creators={recommendedCreators}
+      />
     </div>
   );
 }

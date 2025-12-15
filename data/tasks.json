@@ -1,21 +1,10 @@
 [
-   {
-    "id": 1,
-    "company": "HP",
-    "logo": "/images/hp.png",
+  {
+    "id": 3,
+    "company": "Xerox",
+    "logo": "/images/xerox.png",
     "title": "New Product Launch",
     "status": "Unpaid",
-    "deliverables": ["Product demo", "Products upgrades","Product demo", "Products upgrades"],
-    "price": 450000,
-    "dueDate": " 23/4/2024",
-    "dateAdded": " 23/4/2024"
-  },
-  {
-    "id": 2,
-    "company": "Yandex",
-    "logo": "/images/yandex.png",
-    "title": "New Product Launch",
-    "status": "Paid",
     "deliverables": [
       "Product demo",
       "Products upgrades"
@@ -25,6 +14,33 @@
     "dateAdded": " 23/4/2024"
   },
   {
+    "id": 3,
+    "company": "Xerox",
+    "logo": "/images/xerox.png",
+    "title": "New Product Launch",
+    "status": "Unpaid",
+    "deliverables": [
+      "Product demo",
+      "Products upgrades"
+    ],
+    "price": 450000,
+    "dueDate": " 23/4/2024",
+    "dateAdded": " 23/4/2024"
+  },
+  {
+    "id": 3,
+    "company": "Xerox",
+    "logo": "/images/xerox.png",
+    "title": "New Product Launch",
+    "status": "Unpaid",
+    "deliverables": [
+      "Product demo",
+      "Products upgrades"
+    ],
+    "price": 450000,
+    "dueDate": " 23/4/2024",
+    "dateAdded": " 23/4/2024"
+  },{
     "id": 3,
     "company": "Xerox",
     "logo": "/images/xerox.png",

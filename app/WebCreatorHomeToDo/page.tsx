@@ -21,8 +21,8 @@ export default function HomeWebCreatorHomeToDoPage() {
 
   useEffect(() => {
     fetch("/api/tasks")
-      .then(res => res.json())
-      .then(data => setTasks(data));
+      .then((res) => res.json())
+      .then((data) => setTasks(data));
   }, []);
 
   const handleDelete = async (id: number) => {
@@ -31,23 +31,36 @@ export default function HomeWebCreatorHomeToDoPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
-    setTasks(prev => prev.filter(task => task.id !== id));
+    setTasks((prev) => prev.filter((task) => task.id !== id));
   };
 
   return (
-    <div>
+    // 1. Add min-h-screen and bg color to the outer wrapper so the whole page looks consistent
+    <div className="min-h-screen bg-gray-50">
+      
+      {/* Fixed Navbar sits on top */}
       <TopNavbar />
-      <TabsNavbar />
 
-      <div className="p-4">
-        <div className="flex justify-end mb-4">
-          <button className="px-4 text-2xl py-2 text-black rounded-lg transition-transform hover:scale-110 hover:shadow-lg duration-300">ADD +</button>
+      {/* 2. CRITICAL: Add padding-top (pt-24) here. 
+          This ensures TabsNavbar is not hidden behind TopNavbar. */}
+      <main className="pt-24">
+        
+        <TabsNavbar />
+
+        {/* 3. Content container with centered constraint (optional but recommended) */}
+        <div className="p-4 md:p-6 max-w-7xl mx-auto">
+          {tasks.length === 0 ? (
+             <p className="text-gray-500 text-center mt-10">No tasks found.</p>
+          ) : (
+             <div className="space-y-4">
+               {tasks.map((task) => (
+                 <TaskCard key={task.id} task={task} onDelete={handleDelete} />
+               ))}
+             </div>
+          )}
         </div>
 
-        {tasks.map(task => (
-          <TaskCard key={task.id} task={task} onDelete={handleDelete} />
-        ))}
-      </div>
+      </main>
     </div>
   );
 }

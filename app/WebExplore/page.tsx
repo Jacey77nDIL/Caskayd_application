@@ -1,88 +1,172 @@
 "use client";
-import { useState, useMemo } from "react";
-import { useSearchParams } from "next/navigation"; // 👈 import
-import Navbar from "@/components/Navbar";
+
+import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
+import { Inter } from "next/font/google";
+import Sidebar from "@/components/Sidebar";
+import CreatorCard from "@/components/CreatorCard";
 import FilterBar from "@/components/FilterBar";
-import ProfileCarousel from "@/components/ProfileCarousel";
-import data from "@/data/influencers.json";
+// 1. FIXED: Import missing FiltersState from updated api.ts
+import { getRecommendations, Creator, FiltersState } from "@/utils/api";
+import { Loader2 } from "lucide-react";
 
-export default function Page() {
-  const searchParams = useSearchParams();
-  const campaignId = searchParams.get("campaignId"); // 👈 grab from URL
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+});
 
-  console.log("Campaign ID from URL:", campaignId); // 🐞 debug
+interface RecommendationsResponse {
+  recommendations: Creator[];
+  pagination?: any;
+}
 
-  // 1️⃣ Define filters state here
-  const [filters, setFilters] = useState({
+export default function WebExplore() {
+  const [creators, setCreators] = useState<Creator[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Search & Filters
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState<FiltersState>({
     platform: null,
-    impressions: null,
+    reach: null,
     price: null,
+    followers: null,
   });
 
-  // 🔍 Define search query state
-  const [searchQuery, setSearchQuery] = useState("");
+  // Debounce logic for search
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 2️⃣ Apply filters + search to influencer data
-  const filteredProfiles = useMemo(() => {
-    return data.filter((profile) => {
-      // filter by platform (from FilterBar)
-      if (filters.platform) {
-        const hasPlatform = profile.platforms.some(
-          (p: any) => p.name.toLowerCase() === filters.platform
-        );
-        if (!hasPlatform) return false;
+  const fetchCreators = async (search = "", currentFilters = filters) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params: Record<string, string> = {};
+      if (search) params.search = search;
+      if (currentFilters.platform) params.platform = currentFilters.platform;
+      if (currentFilters.reach) params.followers = currentFilters.reach;
+
+      const response = await getRecommendations(params);
+
+      if (response.success && response.data) {
+        // 2. FIXED: Explicit Cast to avoid 'unknown' error
+        const data = response.data as RecommendationsResponse;
+        
+        // Handle case where recommendations might be directly in data or nested
+        const list = Array.isArray(data) 
+            ? data 
+            : (data.recommendations || []);
+            
+        setCreators(list);
+      } else {
+        setCreators([]);
+        setError(response.message || "Failed to load creators");
       }
+    } catch {
+      // 3. FIXED: Removed unused 'err' variable
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      // filter by search query (name + platforms)
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
+  // Initial Load
+  useEffect(() => {
+    fetchCreators();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-        const matchesName = profile.name.toLowerCase().includes(query);
-        const matchesPlatform = profile.platforms.some((p: any) =>
-          p.name.toLowerCase().includes(query)
-        );
+  // Handle Search Input
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setSearchTerm(val);
 
-        if (!matchesName && !matchesPlatform) return false;
-      }
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      fetchCreators(val, filters);
+    }, 600);
+  };
 
-      return true;
-    });
-  }, [filters, searchQuery]);
+  // Handle Filters
+  const handleFilterChange = (key: keyof FiltersState, value: string | null) => {
+    const newFilters = { ...filters, [key]: value };
+    setFilters(newFilters);
+    fetchCreators(searchTerm, newFilters);
+  };
 
   return (
-    <main className="min-h-screen bg-black text-white bg-[url('/images/backgroundImage.png')] bg-cover bg-center">
-      <Navbar />
+    <div className="flex min-h-screen bg-gray-50">
+      <Sidebar />
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-12 mt-8">
-        <div className="w-full lg:w-1/2 flex flex-col items-center lg:items-end space-y-6">
+      <main className="flex-1 flex flex-col md:ml-64 relative">
+        {/* Header Section */}
+        <div className="sticky top-0 z-20 bg-gray-50 pt-6 px-4 sm:px-8 pb-4">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+            <h1 className={`${inter.className} text-3xl font-bold text-[#691D3D]`}>
+              Explore
+            </h1>
+            
+            {/* Search Bar */}
+            <div className="relative w-full sm:w-96">
+              <input
+                type="text"
+                placeholder="Search creators, niches..."
+                value={searchTerm}
+                onChange={handleSearch}
+                className="w-full pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:ring-2 focus:ring-[#823A5E] focus:border-transparent outline-none bg-white shadow-sm transition-all"
+              />
+              <svg
+                className="absolute left-3 top-2.5 h-5 w-5 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
+          </div>
+
+          <FilterBar filters={filters} onFilterChange={handleFilterChange} />
           
-          {/* 🔍 Search Bar */}
-          <input
-            type="text"
-            placeholder="Search by name or platform..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-4 py-2 rounded-md text-black bg-white"
-          />
+          <div className="mt-4 border-t border-[#BDBDBD]" />
+        </div>
 
-          <FilterBar filters={filters} setFilters={setFilters} />
-          
-
-          {filteredProfiles.length > 0 ? (
-            <ProfileCarousel
-              profiles={filteredProfiles.map((p: any) => ({
-                id: p.id,
-                name: p.name,
-                image: p.image,
-                platforms: p.platforms ?? [],
-              }))}
-              campaignId={campaignId} // 👈 pass it down
-            />
+        {/* Content Section */}
+        <div className="flex-1 px-4 sm:px-8 pb-10 overflow-y-auto min-h-0">
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <Loader2 className="w-10 h-10 animate-spin text-[#823A5E]" />
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center h-64 text-center">
+              <p className="text-red-500 mb-2">{error}</p>
+              <button 
+                onClick={() => fetchCreators(searchTerm, filters)}
+                className="text-[#823A5E] hover:underline font-medium"
+              >
+                Try Again
+              </button>
+            </div>
+          ) : creators.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64 text-center text-gray-500">
+              <p className="text-lg">No creators found.</p>
+              <p className="text-sm">Try adjusting your search or filters.</p>
+            </div>
           ) : (
-            <p>No profiles match your filters</p>
+            <div className="space-y-6">
+              {creators.map((creator) => (
+                <CreatorCard key={creator.id} creator={creator} />
+              ))}
+            </div>
           )}
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }
