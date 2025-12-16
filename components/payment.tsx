@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react"; // Added useMemo for efficiency
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,7 +8,7 @@ import { Card, CardBody, CardHeader, Input } from "@nextui-org/react";
 import { toast } from "react-toastify";
 import { PaystackButton } from "react-paystack";
 import { X, Loader2 } from "lucide-react"; 
-import { getCurrentUser } from "@/utils/api"; // Ensure this function exists in api.ts
+import { getCurrentUser } from "@/utils/api"; 
 
 const schema = z.object({
   email: z.string().email("Invalid email address"),
@@ -22,41 +22,32 @@ type FormData = z.infer<typeof schema>;
 
 export default function PayStackPayment({ onClose }: { onClose: () => void }) {
   const publicKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || "";
-  
-  // 1. Fix "window is not defined" error
   const [isMounted, setIsMounted] = useState(false);
-  
-  // 2. Loading state for the email fetch
   const [isLoadingUser, setIsLoadingUser] = useState(true);
 
   const {
     register,
-    setValue, // Used to programmatically fill the input
+    setValue,
     watch,
     formState: { errors, isValid },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     mode: "onChange",
     defaultValues: {
-      email: "", // Starts empty, will be filled by API
+      email: "",
       amount: undefined,
     },
   });
 
-  // 3. FETCH AND FILL EMAIL AUTOMATICALLY
   useEffect(() => {
-    setIsMounted(true); // Mark component as mounted in browser
-
+    setIsMounted(true);
     async function fetchUserEmail() {
       setIsLoadingUser(true);
       try {
-        // Call the API to get current user details
         const res = await getCurrentUser();
-        
         if (res.success && res.data?.email) {
-          // AUTOMATICALLY FILL THE INPUT
           setValue("email", res.data.email, { 
-            shouldValidate: true, // Make it valid immediately
+            shouldValidate: true, 
             shouldDirty: true 
           });
         }
@@ -67,22 +58,37 @@ export default function PayStackPayment({ onClose }: { onClose: () => void }) {
         setIsLoadingUser(false);
       }
     }
-
     fetchUserEmail();
   }, [setValue]);
 
   const email = watch("email");
   const amount = watch("amount");
 
+  // --- NEW LOGIC START ---
+// Calculate 10% fee and Total
+  const { fee, total } = useMemo(() => {
+    // FIX: Force conversion to Number() here to prevent string concatenation
+    const validAmount = Number(amount) || 0; 
+    
+    const calculatedFee = validAmount * 0.10; // 10%
+    return {
+      fee: calculatedFee,
+      total: validAmount + calculatedFee
+    };
+  }, [amount]);
+  // --- NEW LOGIC END ---
+
   const paystackConfig = {
-    email: email, // Sends the API-fetched email to Paystack
-    amount: (amount || 0) * 100, // Paystack takes amount in kobo
+    email: email,
+    // CRITICAL: We now charge the TOTAL amount (converted to Kobo)
+    amount: Math.ceil(total * 100), 
     publicKey,
     currency: "NGN",
     metadata: {
       custom_fields: [
         { display_name: "Email", variable_name: "email", value: email },
-        { display_name: "Amount", variable_name: "amount", value: String(amount) },
+        { display_name: "Original Amount", variable_name: "original_amount", value: String(amount) },
+        { display_name: "Fee", variable_name: "fee", value: String(fee) },
       ],
     },
     onSuccess: () => {
@@ -96,19 +102,12 @@ export default function PayStackPayment({ onClose }: { onClose: () => void }) {
     label: "text-gray-500/70",
     input: ["text-black/90", "placeholder:text-gray-400"],
     inputWrapper: [
-      "bg-transparent",
-      "border-2",
-      "border-gray-200",
-      "hover:border-gray-400",
-      "transition-all",
-      "duration-300",
-      "h-14",
-      "group-data-[focus=true]:h-16",
-      "group-data-[focus=true]:border-black",
+      "bg-transparent", "border-2", "border-gray-200", "hover:border-gray-400",
+      "transition-all", "duration-300", "h-14",
+      "group-data-[focus=true]:h-16", "group-data-[focus=true]:border-black",
     ],
   };
 
-  // Prevent rendering on server to stop "window is not defined"
   if (!isMounted) return null;
 
   return (
@@ -127,7 +126,7 @@ export default function PayStackPayment({ onClose }: { onClose: () => void }) {
       <CardBody>
         <form className="flex flex-col space-y-6" onSubmit={(e) => e.preventDefault()}>
           
-          {/* Email Input - LOCKED */}
+          {/* Email Input */}
           <div className="flex flex-col gap-1 h-20">
             <Input
               {...register("email")}
@@ -136,13 +135,12 @@ export default function PayStackPayment({ onClose }: { onClose: () => void }) {
               variant="faded"
               labelPlacement="inside"
               size="lg"
-              isReadOnly={true} // <--- THIS LOCKS THE INPUT
+              isReadOnly={true}
               isRequired
               isInvalid={!!errors.email}
               errorMessage={errors.email?.message}
               classNames={{
                 ...inputStyles,
-                // Add gray background to show it's disabled
                 inputWrapper: [...inputStyles.inputWrapper, "bg-gray-100 opacity-80 cursor-not-allowed"] 
               }}
               endContent={
@@ -151,11 +149,11 @@ export default function PayStackPayment({ onClose }: { onClose: () => void }) {
             />
           </div>
 
-          {/* Amount Input - User Enters This */}
-          <div className="flex flex-col gap-1 h-20">
+          {/* Amount Input */}
+          <div className="flex flex-col gap-1">
             <Input
               {...register("amount")}
-              placeholder="Amount (NGN)"
+              placeholder="Enter Amount (NGN)"
               type="number"
               variant="bordered"
               labelPlacement="inside"
@@ -165,6 +163,26 @@ export default function PayStackPayment({ onClose }: { onClose: () => void }) {
               errorMessage={errors.amount?.message}
               classNames={inputStyles}
             />
+            
+            {/* --- NEW DISPLAY SECTION START --- */}
+            {amount && !errors.amount && (
+              <div className="mt-2 bg-gray-50 p-3 rounded-md text-sm text-gray-600 flex flex-col gap-1 animate-fade-in">
+                <div className="flex justify-between">
+                  <span>Entry:</span>
+                  <span>₦{Number(amount).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-orange-600">
+                  <span>Service Fee (10%):</span>
+                  <span>+ ₦{fee.toLocaleString()}</span>
+                </div>
+                <div className="border-t border-gray-300 my-1"></div>
+                <div className="flex justify-between font-bold text-black text-base">
+                  <span>Total to Pay:</span>
+                  <span>₦{total.toLocaleString()}</span>
+                </div>
+              </div>
+            )}
+            {/* --- NEW DISPLAY SECTION END --- */}
           </div>
 
           {/* Pay Button */}
@@ -172,7 +190,8 @@ export default function PayStackPayment({ onClose }: { onClose: () => void }) {
             <div className="mt-2 animate-fade-in">
               <PaystackButton
                 {...paystackConfig}
-                text={`Pay ₦${Number(amount).toLocaleString()}`}
+                // Updated button text to show the TOTAL
+                text={`Pay ₦${total.toLocaleString()}`}
                 className="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition-transform active:scale-95 shadow-md"
               />
             </div>

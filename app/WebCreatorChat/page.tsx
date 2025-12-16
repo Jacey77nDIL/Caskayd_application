@@ -49,7 +49,7 @@ export default function WebCreatorChatPage() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // --- 1. Fetch Chats on Load ---
+  // --- 1. Fetch Chats List on Load ---
   useEffect(() => {
     async function fetchChats() {
       setIsLoading(true);
@@ -75,43 +75,72 @@ export default function WebCreatorChatPage() {
     fetchChats();
   }, []);
 
-  // --- 2. Scroll to bottom ---
+  // --- 2. POLL MESSAGES (The Real-Time Logic) ---
+  useEffect(() => {
+    if (!selectedChat?.id) return;
+
+    let isMounted = true;
+
+    async function loadChatDetails(isBackgroundPoll = false) {
+      // Only show spinner on first load, not during background updates
+      if (!isBackgroundPoll) setIsLoadingMessages(true);
+
+      try {
+        const detail = await getConversationDetail(Number(selectedChat?.id));
+        
+        if (isMounted && detail && detail.messages) {
+           const formattedMessages = detail.messages.map((msg: any) => ({
+            id: msg.id,
+            sender: msg.sender_type === "creator" ? "me" : "other",
+            text: msg.content,
+            time: new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            day: formatDay(new Date(msg.created_at)),
+            status: "read"
+          }));
+
+          // Update the selected chat with new messages
+          setSelectedChat(prev => prev ? { ...prev, messages: formattedMessages } : null);
+
+          // Mark read locally in the sidebar list
+          if (!isBackgroundPoll) {
+             setChats(prev => prev.map(c => c.id === selectedChat?.id ? { ...c, unread: 0 } : c));
+             await markConversationAsRead(selectedChat?.id);
+          }
+        }
+      } catch (error) {
+        console.error("Polling error", error);
+      } finally {
+        if (isMounted && !isBackgroundPoll) setIsLoadingMessages(false);
+      }
+    }
+
+    // A. Run immediately
+    loadChatDetails();
+
+    // B. Run every 3 seconds
+    const intervalId = setInterval(() => {
+      loadChatDetails(true);
+    }, 3000);
+
+    // C. Cleanup
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
+  }, [selectedChat?.id]); // Re-runs only if the user switches chat IDs
+
+
+  // --- 3. Auto Scroll ---
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [selectedChat?.messages]);
 
-  // --- 3. Handle Select Chat ---
-  const handleSelectChat = async (chat: Chat) => {
+  // --- 4. Simplified Select Handler ---
+  const handleSelectChat = (chat: Chat) => {
     setViewMode("chat");
-    setIsLoadingMessages(true);
-    
+    // We just set the chat object; the useEffect above will handle the fetching
+    setSelectedChat({ ...chat, messages: [] }); 
     setChats(prev => prev.map(c => c.id === chat.id ? { ...c, unread: 0 } : c));
-
-    const [detail] = await Promise.all([
-      getConversationDetail(Number(chat.id)),
-      markConversationAsRead(chat.id)
-    ]);
-
-    if (detail && detail.messages) {
-      const formattedMessages = detail.messages.map((msg: any) => ({
-        id: msg.id,
-        sender: msg.sender_type === "creator" ? "me" : "other",
-        text: msg.content,
-        time: new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        day: formatDay(new Date(msg.created_at)),
-        status: "read"
-      }));
-
-      setSelectedChat({
-        ...chat,
-        unread: 0,
-        messages: formattedMessages
-      });
-    } else {
-      setSelectedChat({ ...chat, messages: [] });
-    }
-    
-    setIsLoadingMessages(false);
   };
 
   const handleSendMessage = async () => {
@@ -129,6 +158,7 @@ export default function WebCreatorChatPage() {
       status: "sent",
     };
 
+    // Optimistic Update
     setSelectedChat(prev => prev ? ({
       ...prev,
       messages: [...prev.messages, localMessage]
@@ -138,6 +168,8 @@ export default function WebCreatorChatPage() {
 
     try {
       const res = await sendMessage(selectedChat.id, localMessage.text);
+      
+      // Update the temp ID with real ID
       if (res && res.id) {
         setSelectedChat(prev => prev ? ({
           ...prev,
@@ -145,6 +177,7 @@ export default function WebCreatorChatPage() {
         }) : null);
       }
 
+      // Update sidebar preview
       setChats(prev => prev.map(c => 
         c.id === selectedChat.id 
           ? { ...c, lastMessage: localMessage.text, time: localMessage.time, timestamp: now } 
@@ -163,28 +196,18 @@ export default function WebCreatorChatPage() {
   );
 
   return (
-    // MAIN CONTAINER: Locked to screen height, no window scroll
     <main className="h-screen bg-white overflow-hidden flex flex-col">
-      
-      {/* 1. Navbar: Fixed height, does not shrink/grow */}
-      
-        <TopNavbar />
-      
+      <TopNavbar />
 
-      {/* 2. Content Area: Takes remaining height, flex container */}
       <div className="flex-1 flex w-full overflow-hidden relative pt-20 md:pt-18">
         
-        {/* --- LEFT SIDEBAR (Chats List) --- 
-            - Always independent scroll 
-            - Fixed width on desktop
-        */}
+        {/* --- LEFT SIDEBAR --- */}
         <aside
           className={`
             flex-col w-full md:w-[350px] lg:w-[400px] border-r border-gray-200 bg-white h-full
             ${viewMode === "list" ? "flex" : "hidden md:flex"}
           `}
         >
-          {/* Header (Fixed) */}
           <div className="p-4 border-b border-gray-100 bg-white flex-none">
             <h2 className="text-xl font-bold text-[#823A5E] mb-4">Messages</h2>
             <div className="relative">
@@ -199,7 +222,6 @@ export default function WebCreatorChatPage() {
             </div>
           </div>
 
-          {/* List (Scrollable) */}
           <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
             {isLoading ? (
               <div className="flex justify-center pt-10"><Loader2 className="animate-spin text-[#823A5E]" /></div>
@@ -242,9 +264,7 @@ export default function WebCreatorChatPage() {
           </div>
         </aside>
 
-        {/* --- RIGHT PANE (Chat Window) --- 
-            - Independent scroll for messages
-        */}
+        {/* --- RIGHT PANE --- */}
         <section
           className={`
             flex-1 flex flex-col bg-[#F5F7FA] h-full
@@ -253,7 +273,7 @@ export default function WebCreatorChatPage() {
         >
           {selectedChat ? (
             <>
-              {/* Chat Header (Fixed) */}
+              {/* Header */}
               <div className="flex-none flex items-center gap-3 p-4 bg-white border-b border-gray-200 shadow-sm z-10">
                 <button 
                   className="md:hidden p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-full"
@@ -271,7 +291,7 @@ export default function WebCreatorChatPage() {
                 <Phone className="w-5 h-5 text-gray-400 hover:text-[#823A5E] cursor-pointer" />
               </div>
 
-              {/* Messages Area (Scrollable) */}
+              {/* Messages Area */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {isLoadingMessages ? (
                   <div className="flex justify-center pt-10"><Loader2 className="animate-spin text-[#823A5E]" /></div>
@@ -313,7 +333,7 @@ export default function WebCreatorChatPage() {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Input Area (Fixed) */}
+              {/* Input Area */}
               <div className="flex-none p-4 bg-white border-t border-gray-200 flex items-center gap-3">
                 <button className="p-2 text-gray-400 hover:text-[#823A5E] transition flex-none">
                   <Paperclip className="w-5 h-5" />

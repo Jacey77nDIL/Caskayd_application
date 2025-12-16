@@ -4,7 +4,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
 // --- TYPES ---
 
-// 1. ADDED: Missing export for WebExplore
 export interface FiltersState {
   platform: string | null;
   reach: string | null;
@@ -318,5 +317,59 @@ export const getNiches = async (): Promise<ApiResponse> => {
     return { success: true, data: niches };
   } catch (error) {
     return { success: false, message: (error as Error).message };
+  }
+};
+
+// ==========================================
+// 7. ACCOUNT DETAILS (CORRECTED)
+// ==========================================
+
+export const submitAccountDetails = async (payload: { account_name: string; account_number: string; bank_code: string }): Promise<ApiResponse> => {
+  try {
+    // Note: fetchWithAuth automatically adds the Bearer Token and Content-Type header
+    const data = await fetchWithAuth("/creator/submit-account", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    return { success: true, data };
+  } catch (error) {
+    return { success: false, message: (error as Error).message };
+  }
+};
+
+// ... inside @/utils/api.ts
+
+// ✅ NEW: Fetch Banks (with fallback)
+export const getBanks = async (): Promise<ApiResponse> => {
+  try {
+    // Try to fetch from your backend first
+    const data = await fetchWithAuth("/misc/banks", { method: "GET" });
+    const bankList = data?.data || data || [];
+    
+    // Validate we actually got an array
+    if (Array.isArray(bankList) && bankList.length > 0) {
+      return { success: true, data: bankList };
+    }
+    throw new Error("No banks found");
+  } catch (error) {
+    console.warn("Could not fetch live banks, using fallback list.");
+    // Fallback list so the UI never breaks
+    const FALLBACK_BANKS = [
+      { name: "Access Bank", code: "044" },
+      { name: "Guaranty Trust Bank", code: "058" },
+      { name: "United Bank for Africa", code: "033" },
+      { name: "Zenith Bank", code: "057" },
+      { name: "First Bank of Nigeria", code: "011" },
+      { name: "Kuda Bank", code: "50211" },
+      { name: "OPay", code: "999992" },
+      { name: "PalmPay", code: "999991" },
+      { name: "Moniepoint", code: "50515" },
+      { name: "Stanbic IBTC Bank", code: "221" },
+      { name: "Sterling Bank", code: "232" },
+      { name: "Union Bank of Nigeria", code: "032" },
+      { name: "Fidelity Bank", code: "070" },
+      { name: "Ecobank Nigeria", code: "050" },
+    ];
+    return { success: true, data: FALLBACK_BANKS };
   }
 };

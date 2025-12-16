@@ -5,7 +5,7 @@ import Sidebar from "@/components/Sidebar";
 import PayStackPayment from "@/components/payment";
 import Image from "next/image";
 import { format, isToday, isYesterday } from "date-fns";
-import { Phone, Send, Paperclip, Mic, Smile, ArrowLeft, Loader2 } from "lucide-react";
+import { Phone, Send, Paperclip, Mic, Smile, ArrowLeft, Loader2 ,CreditCard} from "lucide-react";
 
 // Import Central API
 import { 
@@ -118,37 +118,60 @@ export default function WebMessages() {
     initData();
   }, []);
 
-  // 2. Load Selected Chat Messages
+// 2. Load Selected Chat Messages (With Real-Time Polling)
   useEffect(() => {
     if (!selectedChatId) return;
 
-    async function loadChatDetails() {
-      setIsLoadingMessages(true);
-      const data = await getConversationDetail(Number(selectedChatId));
-      
-      if (data && data.messages) {
-        // Map messages
-        const mappedMsgs: Message[] = data.messages.map((m: any) => ({
-          id: m.id,
-          sender: m.sender_type === "business" ? "me" : "other",
-          text: m.content,
-          time: formatMessageTime(m.created_at),
-          day: formatMessageDay(m.created_at),
-          timestamp: new Date(m.created_at),
-          status: "read", // Assuming historical messages are read
-        }));
-        setMessages(mappedMsgs);
+    let isMounted = true;
 
-        // Mark as read locally
-        setChats(prev => prev.map(c => c.id === selectedChatId ? { ...c, unread: 0 } : c));
+    // We define the fetcher function so we can reuse it
+    async function loadChatDetails(isBackgroundPoll = false) {
+      // Only show the big loading spinner on the very first load, not on background updates
+      if (!isBackgroundPoll) setIsLoadingMessages(true);
+
+      try {
+        const data = await getConversationDetail(Number(selectedChatId));
         
-        // Mark read on server
-        await markConversationAsRead(selectedChatId);
+        if (isMounted && data && data.messages) {
+          // Map messages
+          const mappedMsgs: Message[] = data.messages.map((m: any) => ({
+            id: m.id,
+            sender: m.sender_type === "business" ? "me" : "other",
+            text: m.content,
+            time: formatMessageTime(m.created_at),
+            day: formatMessageDay(m.created_at),
+            timestamp: new Date(m.created_at),
+            status: "read",
+          }));
+
+          setMessages(mappedMsgs);
+
+          // Mark as read logic (Keep this lightweight or move it out of the poll if needed)
+          if (!isBackgroundPoll) {
+             setChats(prev => prev.map(c => c.id === selectedChatId ? { ...c, unread: 0 } : c));
+             await markConversationAsRead(selectedChatId);
+          }
+        }
+      } catch (error) {
+        console.error("Polling error", error);
+      } finally {
+        if (isMounted && !isBackgroundPoll) setIsLoadingMessages(false);
       }
-      setIsLoadingMessages(false);
     }
 
+    // A. Initial Load (Shows Spinner)
     loadChatDetails();
+
+    // B. Set Interval to Poll every 3 seconds (No Spinner)
+    const intervalId = setInterval(() => {
+      loadChatDetails(true); 
+    }, 3000); 
+
+    // C. Cleanup on Unmount or when Chat ID changes
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
   }, [selectedChatId]);
 
   // 3. Scroll to bottom on new message
@@ -290,12 +313,14 @@ export default function WebMessages() {
                   </div>
                 </div>
                 
-                <button 
-                  onClick={() => setShowPaymentModal(true)} 
-                  className="bg-[#823A5E] text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-[#6d2e4f] shadow-sm transition-transform active:scale-95"
-                >
-                  Make Payment
-                </button>
+               <button 
+  onClick={() => setShowPaymentModal(true)} 
+  className="bg-[#823A5E] text-white text-sm font-medium p-2 md:px-4 md:py-2 rounded-lg hover:bg-[#6d2e4f] shadow-sm transition-transform active:scale-95 flex items-center gap-2"
+  title="Make Payment" // Tooltip for mobile users
+>
+  <CreditCard className="w-5 h-5" />
+  <span className="hidden md:inline">Make Payment</span>
+</button>
               </div>
 
               {/* Messages Area */}
