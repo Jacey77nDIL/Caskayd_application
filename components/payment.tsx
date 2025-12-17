@@ -91,9 +91,29 @@ export default function PayStackPayment({ onClose }: { onClose: () => void }) {
         { display_name: "Fee", variable_name: "fee", value: String(fee) },
       ],
     },
-    onSuccess: () => {
-      toast.success("Payment successful!");
-      onClose();
+    reference: (new Date()).getTime().toString(), // Generate unique ref
+    onSuccess: async (referenceObj: any) => {
+      // referenceObj looks like { message: "Approved", reference: "12345..." }
+      
+      toast.info("Verifying payment...");
+
+      try {
+        const res = await fetch("/api/verify-payment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reference: referenceObj.reference }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          toast.success("Payment Verified & Completed!");
+          onClose(); // Close modal
+        } else {
+          toast.error("Payment verification failed. Please contact support.");
+        }
+      } catch (error) {
+        console.log(error);
+        toast.error("Network error verifying payment.");
+      }
     },
     onClose: () => toast.info("Transaction cancelled"),
   };
@@ -127,27 +147,21 @@ export default function PayStackPayment({ onClose }: { onClose: () => void }) {
         <form className="flex flex-col space-y-6" onSubmit={(e) => e.preventDefault()}>
           
           {/* Email Input */}
-          <div className="flex flex-col gap-1 h-20">
-            <Input
-              {...register("email")}
-              placeholder="Fetched your email"
-              type="email"
-              variant="faded"
-              labelPlacement="inside"
-              size="lg"
-              isReadOnly={true}
-              isRequired
-              isInvalid={!!errors.email}
-              errorMessage={errors.email?.message}
-              classNames={{
-                ...inputStyles,
-                inputWrapper: [...inputStyles.inputWrapper, "bg-gray-100 opacity-80 cursor-not-allowed"] 
-              }}
-              endContent={
-                isLoadingUser ? <Loader2 className="animate-spin w-4 h-4 text-[#823A5E]" /> : null
-              }
-            />
-          </div>
+
+          <Input
+  {...register("email")}
+  // Use the 'value' prop to force it to display the watched value
+  value={email || ""} 
+  variant="faded"
+  isReadOnly // <--- key prop
+  labelPlacement="inside"
+  size="lg"
+  classNames={{
+    ...inputStyles,
+    inputWrapper: "bg-gray-100 border-gray-300 cursor-not-allowed", // Grey it out visually
+  }}
+/>
+          
 
           {/* Amount Input */}
           <div className="flex flex-col gap-1">
