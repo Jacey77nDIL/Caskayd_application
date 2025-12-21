@@ -1,77 +1,95 @@
 "use client";
+
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
+import { Loader2, Check, X } from "lucide-react";
 
 type RequestCardProps = {
   logo: string;
   title: string;
   price: string;
+  status: string;
   onClick: () => void;
+  onAccept: () => void;
+  onDecline: () => void;
+  isProcessing: boolean;
 };
 
-export default function RequestCard({ logo, title, price, onClick }: RequestCardProps) {
+export default function RequestCard({ 
+  logo, 
+  title, 
+  price, 
+  status,
+  onClick, 
+  onAccept, 
+  onDecline, 
+  isProcessing 
+}: RequestCardProps) {
   const [hovered, setHovered] = useState(false);
+
+  // Stop click propagation so clicking a button doesn't open the modal
+  const handleActionClick = (e: React.MouseEvent, action: () => void) => {
+    e.stopPropagation();
+    if (!isProcessing) action();
+  };
 
   return (
     <motion.div
       onClick={onClick}
       onHoverStart={() => setHovered(true)}
       onHoverEnd={() => setHovered(false)}
-      className="flex flex-col bg-gradient-to-r from-[#1d2766] to-[#25317e] 
-                 text-white rounded-xl p-4 shadow-md cursor-pointer 
-                 transition-all duration-300 overflow-hidden"
-      layout // ✅ enables layout animations
-      transition={{
-        layout: { duration: 0.45, ease: [0.25, 0.1, 0.25, 1] }, // smoother curve
-      }}
-      whileHover={{ scale: 1.02 }} // small grow for subtle feedback
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -4, shadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)" }}
+      className="group relative flex flex-col bg-white border border-gray-100 
+                 rounded-2xl p-5 shadow-sm cursor-pointer overflow-hidden
+                 transition-all duration-300"
     >
-      {/* Top Section */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center space-x-3">
-          <Image
-            src={logo}
-            alt={title}
-            width={40}
-            height={40}
-            className="rounded-full"
-          />
-          <h3 className="font-medium text-sm sm:text-base">{title}</h3>
+      {/* Decorative Gradient Background on Hover */}
+      <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+      {/* Content */}
+      <div className="relative z-10 flex items-center justify-between gap-4">
+        <div className="flex items-center space-x-4">
+          <div className="relative w-12 h-12 flex-shrink-0">
+             <Image
+              src={logo}
+              alt={title}
+              fill
+              className="rounded-full object-cover border border-gray-200"
+            />
+          </div>
+          <div>
+            <h3 className="font-bold text-gray-900 leading-tight">{title}</h3>
+            <p className="text-sm text-gray-500 font-medium">{price}</p>
+          </div>
         </div>
 
-        {/* Right side buttons */}
-        <div className="flex flex-wrap sm:flex-nowrap justify-end gap-2">
-          <button className="bg-green-500 text-white px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm">
-            Accept
-          </button>
-          <button className="border border-gray-400 text-gray-200 px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm">
-            Refine
-          </button>
-          <button className="bg-red-500 text-white px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm">
-            Decline
-          </button>
-        </div>
-      </div>
-
-      {/* Expanding section */}
-      <AnimatePresence initial={false}>
-        {hovered && (
-          <motion.div
-            key="expand"
-            initial={{ opacity: 0, height: 0, y: -6 }}
-            animate={{ opacity: 1, height: "auto", y: 0 }}
-            exit={{ opacity: 0, height: 0, y: -6 }}
-            transition={{
-              duration: 0.4,
-              ease: [0.22, 1, 0.36, 1], // easeOutCubic
-            }}
-            className="mt-3 pt-2 pl-[52px] text-sm text-gray-200"
-          >
-            <p>{price}</p>
-          </motion.div>
+        {/* Action Buttons - Only show if invited */}
+        {status === 'invited' && (
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={(e) => handleActionClick(e, onAccept)}
+              disabled={isProcessing}
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-green-100 text-green-600 hover:bg-green-600 hover:text-white transition-all disabled:opacity-50"
+              title="Accept"
+            >
+              {isProcessing ? <Loader2 className="animate-spin w-4 h-4"/> : <Check size={18} />}
+            </button>
+            
+            <button 
+              onClick={(e) => handleActionClick(e, onDecline)}
+              disabled={isProcessing}
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-red-100 text-red-600 hover:bg-red-600 hover:text-white transition-all disabled:opacity-50"
+              title="Decline"
+            >
+              <X size={18} />
+            </button>
+          </div>
         )}
-      </AnimatePresence>
+      </div>
     </motion.div>
   );
 }

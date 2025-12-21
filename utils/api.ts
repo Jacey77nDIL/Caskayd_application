@@ -1,28 +1,27 @@
+  //utils/api
   import { getToken } from "@/utils/auth";
-
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
   // --- TYPES ---
 
-  export interface FiltersState {
-    platform: string | null;
-    reach: string | null;
-    price: string | null;
-    followers: string | null;
-  }
+export interface FiltersState {
+  niche: string | null;
+  reach: string | null;
+  followers: string | null;
+  engagement_rate: string | null; // ADDED (Removed price)
+}
 
-  export interface Creator {
+export interface Creator {
+  id: number;
+  name: string;
+  followers_count: number;
+  engagement_rate: string;
+  instagram_username?: string | null;
+  reach_7d?: number | null;
+  niches: {
     id: number;
     name: string;
-    followers_count: number;
-    engagement_rate: string;
-    instagram_username?: string | null;
-    reach_7d?: number | null;
-    niches: {
-      id: number;
-      name: string;
-    }[];
-  }
+  }[];
+}
 
   // Generic Response Type
   export interface ApiResponse<T = any> {
@@ -31,39 +30,197 @@
     message?: string;
     url?: string;
   }
+export interface NicheOption {
+  id: number;
+  name: string;
+}
 
+export interface CampaignInvitation {
+  id: number;
+  campaign_id: number;
+  campaign_title: string;
+  campaign_description: string;
+  campaign_budget: number;
+  campaign_start_date: string;
+  campaign_end_date: string;
+  business_name: string;
+  status: "invited" | "accepted" | "declined";
+  invited_at: string;
+  responded_at?: string | null;
+}
   // --- HELPER: Consistent Fetching ---
-  async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
-    const token = getToken();
+// utils/api.ts
+
+// ...
+
+async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
+  const token = getToken();
+  
+  const headers = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...options.headers,
+  };
+
+  const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+
+  const res = await fetch(`${API_URL}${cleanEndpoint}`, {
+    ...options,
+    headers,
+  });
+
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => ({}));
     
-    const headers = {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    };
-
-    const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
-
-    const res = await fetch(`${API_URL}${cleanEndpoint}`, {
-      ...options,
-      headers,
-    });
-
-    if (!res.ok) {
-      const errorBody = await res.json().catch(() => ({}));
-      throw new Error(errorBody.detail || errorBody.message || `Request failed with status ${res.status}`);
+    // ✅ FIX: Handle FastAPI 422 Validation Arrays gracefully
+    let errorMessage = errorBody.message || "Request failed";
+    
+    if (errorBody.detail) {
+      if (Array.isArray(errorBody.detail)) {
+        // It's a validation error list, join the messages
+        errorMessage = errorBody.detail
+          .map((err: any) => `${err.loc[1]}: ${err.msg}`)
+          .join(" | ");
+      } else {
+        // It's a simple string error
+        errorMessage = errorBody.detail;
+      }
     }
-
-    const contentType = res.headers.get("content-type");
-    if (contentType && contentType.includes("application/json")) {
-      return res.json();
-    }
-    return res.text();
+    
+    throw new Error(errorMessage);
   }
 
+  const contentType = res.headers.get("content-type");
+  if (contentType && contentType.includes("application/json")) {
+    return res.json();
+  }
+  return res.text();
+}
   // ==========================================
   // 1. ONBOARDING & PROFILE
   // ==========================================
+// utils/api.ts
+
+export const getCampaignInvitations = async (status?: string): Promise<ApiResponse> => {
+  try {
+    // Build query string if status is provided
+    const query = status ? `?status=${status}` : "";
+    const endpoint = `/campaigns/invitations${query}`;
+    
+    const response = await fetchWithAuth(endpoint, { method: "GET" });
+    
+    // The backend returns { success: true, data: { invitations: [...] } }
+    // We want to return just the array if possible, or the whole data object
+    if (response.success && response.data?.invitations) {
+        return { success: true, data: response.data.invitations };
+    }
+    
+    return { success: true, data: [] }; // Return empty array if no invitations found
+  } catch (error) {
+    console.error("Failed to fetch invitations:", error);
+    return { success: false, message: (error as Error).message };
+  }
+};
+
+export const uploadProfilePicture = async (file: File) => {
+  try {
+    const token = getToken();
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch(`${API_URL}/upload/creator-profile-picture`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return { success: false, message: errorData.detail || "Upload failed" };
+    }
+
+    // ✅ FIX: Handle both JSON objects and plain text URLs
+    const contentType = response.headers.get("content-type");
+    let data;
+    if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+    } else {
+        data = await response.text(); // Fallback for plain text response
+        // Clean up quotes if they exist (e.g. "http://..." -> http://...)
+        if (data.startsWith('"') && data.endsWith('"')) {
+            data = data.slice(1, -1);
+        }
+    }
+
+    return { success: true, data: data };
+  } catch (error) {
+    console.error("Upload Error:", error);
+    return { success: false, message: "Network error during upload" };
+  }
+};
+
+  export const getAvailableNiches = async (): Promise<ApiResponse> => {
+  try {
+    // Endpoint: /recommendations/filters/niches
+    const response = await fetchWithAuth("/recommendations/filters/niches", { method: "GET" });
+    
+    // Normalize response: ensure we return a clean array of niches
+    const list = response?.data?.niches || response?.data || [];
+    return { success: true, data: list };
+  } catch (error) {
+    console.error("Failed to fetch niches:", error);
+    return { success: false, message: (error as Error).message };
+  }
+};
+
+// ==========================================
+// RECOMMENDATIONS (Updated)
+// ==========================================
+export const getRecommendations = async (params: Record<string, string | number> = {}): Promise<ApiResponse> => {
+  try {
+    const backendParams: Record<string, string> = {
+      offset: (params.offset || 0).toString(),
+      limit: (params.limit || 20).toString(),
+    };
+
+    if (params.search) backendParams.search = String(params.search);
+    if (params.min_followers) backendParams.min_followers = String(params.min_followers);
+    if (params.max_followers) backendParams.max_followers = String(params.max_followers);
+    if (params.niche) backendParams.niches = String(params.niche);
+
+    // NEW: Map Engagement Rate
+    // API expects a number (e.g., 3 for 3%)
+    if (params.engagement_rate) {
+        backendParams.engagement_rate = String(params.engagement_rate);
+    }
+
+    const query = new URLSearchParams(backendParams).toString();
+    const rawData = await fetchWithAuth(`/recommendations?${query}`, { method: "GET" });
+
+    // ... (Keep existing response normalization logic)
+    let creatorsList: Creator[] = [];
+    if (rawData?.data && Array.isArray(rawData.data.recommendations)) {
+      creatorsList = rawData.data.recommendations;
+    } 
+    else if (Array.isArray(rawData.data)) {
+        creatorsList = rawData.data;
+    }
+
+    return { 
+      success: true, 
+      data: { 
+        recommendations: creatorsList, 
+        pagination: rawData.data?.pagination || {} 
+      } 
+    };
+
+  } catch (error) {
+    console.error("Failed to get recommendations:", error);
+    return { success: false, message: (error as Error).message };
+  }
+};
 
   export const getIndustries = async (): Promise<ApiResponse> => {
     try {
@@ -95,58 +252,7 @@
   // 2. RECOMMENDATIONS
   // ==========================================
 
-  export const getRecommendations = async (params: Record<string, string | number> = {}): Promise<ApiResponse> => {
-    try {
-      const backendParams: Record<string, string> = {
-        offset: (params.offset || 0).toString(),
-        limit: (params.limit || 10).toString(),
-      };
 
-      if (params.search) backendParams.search = String(params.search);
-      if (params.followers) {
-        if (params.followers === "1k-10k") {
-          backendParams.min_followers = "1000";
-          backendParams.max_followers = "10000";
-        } else if (params.followers === "10k-50k") {
-          backendParams.min_followers = "10000";
-          backendParams.max_followers = "50000";
-        } else if (params.followers === "50k+") {
-          backendParams.min_followers = "50000";
-        }
-      }
-      if (params.platform) backendParams.niches = String(params.platform);
-
-      const query = new URLSearchParams(backendParams).toString();
-      const rawData = await fetchWithAuth(`/recommendations?${query}`, { method: "GET" });
-
-      let creatorsList: Creator[] = [];
-
-      if (rawData?.data && Array.isArray(rawData.data.recommendations)) {
-        creatorsList = rawData.data.recommendations;
-      } 
-      else if (Array.isArray(rawData)) {
-        creatorsList = rawData;
-      }
-      else if (Array.isArray(rawData.recommendations)) {
-        creatorsList = rawData.recommendations;
-      }
-      else if (Array.isArray(rawData.data)) {
-        creatorsList = rawData.data;
-      }
-
-      return { 
-        success: true, 
-        data: { 
-          recommendations: creatorsList, 
-          pagination: rawData.data?.pagination || rawData.pagination || {} 
-        } 
-      };
-
-    } catch (error) {
-      console.error("Failed to get recommendations:", error);
-      return { success: false, message: (error as Error).message };
-    }
-  };
 
   // ==========================================
   // 3. CAMPAIGNS
@@ -426,6 +532,87 @@ export const submitAccountDetails = async (payload: {
 
   } catch (error) {
     console.error("Submit Account Error:", error);
+    return { success: false, message: (error as Error).message };
+  }
+};
+
+// utils/api.ts
+
+// ... existing imports and types ...
+
+// utils/api.ts
+
+// ... (keep all the code above unchanged) ...
+
+export async function acceptCampaignInvitation(campaignId: number) {
+  try {
+    // ✅ FIX: Use fetchWithAuth so the Token is sent automatically
+    const res = await fetchWithAuth(`/campaigns/${campaignId}/accept`, {
+      method: "POST",
+    });
+
+    // fetchWithAuth automatically parses JSON, so we just check if it returned valid data
+    // If fetchWithAuth throws an error (e.g. 401 or 422), it goes to the catch block.
+    
+    return { success: true, message: "Campaign accepted successfully", data: res };
+
+  } catch (error) {
+    // fetchWithAuth throws errors with the backend message, so we capture it here
+    return { success: false, message: (error as Error).message || "Failed to accept" };
+  }
+}
+
+export async function declineCampaignInvitation(campaignId: number) {
+  try {
+    // ✅ FIX: Use fetchWithAuth here too
+    const res = await fetchWithAuth(`/campaigns/${campaignId}/decline`, {
+      method: "POST",
+    });
+
+    return { success: true, message: "Campaign declined", data: res };
+
+  } catch (error) {
+    return { success: false, message: (error as Error).message || "Failed to decline" };
+  }
+}
+
+// 1. ADD: Function to upload the brief
+export const uploadCampaignBrief = async (campaignId: number, file: File): Promise<ApiResponse> => {
+  try {
+    const token = getToken();
+    const formData = new FormData();
+    formData.append("file", file); // The key 'file' matches your Swagger "file" param
+
+    // Note: campaign_id is a QUERY parameter based on your Swagger docs
+    const res = await fetch(`${API_URL}/upload/campaign-brief?campaign_id=${campaignId}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        // DO NOT set Content-Type here; let the browser set it for FormData
+      },
+      body: formData,
+    });
+
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.detail || "File upload failed");
+    }
+
+    return await res.json();
+  } catch (error) {
+    return { success: false, message: (error as Error).message };
+  }
+};
+
+// 2. ADD: Function to update the campaign (PUT)
+export const updateCampaign = async (id: number, payload: any): Promise<ApiResponse> => {
+  try {
+    const res = await fetchWithAuth(`/campaigns/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+    return { success: true, data: res };
+  } catch (error) {
     return { success: false, message: (error as Error).message };
   }
 };

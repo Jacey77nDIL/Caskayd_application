@@ -12,7 +12,7 @@ type ModalProps = {
 };
 
 export default function Modal({ isOpen, onClose, title, children }: ModalProps) {
-  // ✅ Prevent background scrolling when modal is open
+  // [UX] Lock body scroll
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -29,45 +29,39 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
       {isOpen && (
         <motion.div
           key="modal-backdrop"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-          aria-modal="true"
-          role="dialog"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.25 }}
           onClick={onClose}
         >
           <motion.div
             key="modal-content"
-            initial={{ opacity: 0, y: 30, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.97 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="relative w-full max-w-2xl bg-[#E6D8DF] rounded-2xl shadow-xl p-4 sm:p-6 md:p-8 max-h-[90vh] overflow-y-auto no-scrollbar"
+            // [MOBILE] Slide up from bottom on mobile, Fade in/Scale on desktop
+            initial={{ y: "100%", opacity: 0 }} 
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: "100%", opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            
+            // [MOBILE] h-full/w-full on mobile, rounded on desktop
+            className="relative w-full h-[90vh] sm:h-auto sm:max-h-[85vh] sm:max-w-2xl bg-white sm:rounded-3xl shadow-2xl flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Close Button */}
-            <button
-              type="button"
-              onClick={onClose}
-              className="absolute top-4 right-4 text-gray-600 hover:text-black transition-colors duration-200"
-              aria-label="Close"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            {/* Header - Sticky */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h2 className="text-xl font-bold text-gray-900">{title}</h2>
+              <button
+                onClick={onClose}
+                className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
 
-            {/* Title */}
-            {title && (
-              <div className="mb-5 text-center">
-                <h2 className="text-lg md:text-xl font-semibold text-black">
-                  {title}
-                </h2>
-              </div>
-            )}
-
-            {/* Content */}
-            <div className="overflow-y-auto no-scrollbar">{children}</div>
+            {/* Content - Scrollable */}
+            <div className="flex-1 overflow-y-auto p-6 no-scrollbar">
+              {children}
+            </div>
           </motion.div>
         </motion.div>
       )}

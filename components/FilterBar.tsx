@@ -1,93 +1,25 @@
-//FilterBar
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
 import { Inter } from "next/font/google";
-import { Layers, MessageSquare, ChevronDown, Check, Users } from "lucide-react";
+import { ChevronDown, Check, Users, Tag, Activity, MessageSquare } from "lucide-react"; 
 import { motion, AnimatePresence } from "framer-motion";
+import { FiltersState } from "@/utils/api";
 
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
-const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-inter",
-});
-
-// 🧩 Filter Types
-interface FiltersState {
-  platform: string | null;
-  reach: string | null; // renamed from impressions
-  price: string | null;
-  followers: string | null; // new filter
-}
+interface DropdownOption { label: string; value: string; }
 
 interface FilterBarProps {
   filters: FiltersState;
-  setFilters: React.Dispatch<React.SetStateAction<FiltersState>>;
+  onFilterChange: (key: keyof FiltersState, value: string | null) => void;
+  nicheOptions: DropdownOption[]; 
 }
 
-interface DropdownOption {
-  label: string;
-  value: string;
-}
-
-interface FilterConfig {
-  key: keyof FiltersState;
-  label: string;
-  icon: React.ReactNode;
-  options: DropdownOption[];
-}
-
-// 🧠 Filter Configuration
-const filtersConfig: FilterConfig[] = [
-  {
-    key: "platform",
-    label: "Platform",
-    icon: <Layers className="w-4 h-4 mr-2" />,
-    options: [
-      { label: "Facebook", value: "facebook" },
-      { label: "TikTok", value: "tiktok" },
-      { label: "Instagram", value: "Instagram" },
-    ],
-  },
-  {
-    key: "reach", // renamed key
-    label: "Reach", // renamed label
-    icon: <MessageSquare className="w-4 h-4 mr-2" />,
-    options: [
-      { label: "1k - 10k", value: "1k-10k" },
-      { label: "11k - 100k", value: "11k-100k" },
-      { label: "100k+", value: "100k+" },
-    ],
-  },
-  {
-    key: "followers", // new filter
-    label: "Followers",
-    icon: <Users className="w-4 h-4 mr-2" />, // 👤 people icon
-    options: [
-      { label: "1k - 10k", value: "1k-10k" },
-      { label: "11k - 100k", value: "11k-100k" },
-      { label: "100k+", value: "100k+" },
-    ],
-  },
-  {
-    key: "price",
-    label: "Price",
-    icon: <span className="mr-2 font-bold">₦</span>,
-    options: [
-      { label: "5k", value: "5k" },
-      { label: "5k - 10k", value: "5k-10k" },
-      { label: "10k+", value: "10k+" },
-    ],
-  },
-];
-
-// 🎛️ FilterBar Component
-export default function FilterBar({ filters, setFilters }: FilterBarProps) {
+export default function FilterBar({ filters, onFilterChange, nicheOptions }: FilterBarProps) {
   const [openFilter, setOpenFilter] = useState<string | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
@@ -98,69 +30,89 @@ export default function FilterBar({ filters, setFilters }: FilterBarProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const filtersConfig = [
+    { key: "niche", label: "Niches", icon: <Tag size={14} />, options: nicheOptions },
+    { key: "reach", label: "Reach", icon: <MessageSquare size={14} />, options: [{ label: "1k-10k", value: "1k-10k" }, { label: "10k-100k", value: "10k-100k" }, { label: "100k+", value: "100k-1M" }] },
+    { key: "followers", label: "Followers", icon: <Users size={14} />, options: [{ label: "Micro", value: "1k-10k" }, { label: "Macro", value: "100k+" }] },
+    { key: "engagement_rate", label: "Eng. Rate", icon: <Activity size={14} />, options: [{ label: "> 1%", value: "1" }, { label: "> 3%", value: "3" }, { label: "> 5%", value: "5" }] },
+  ];
+
   return (
-    <div ref={wrapperRef} className="flex flex-col w-full max-w-4xl mx-auto">
-      {/* Header */}
-      <h2 className={`${inter.className} text-lg font-semibold text-black mb-4`}>Filter</h2>
+    <div ref={wrapperRef} className="w-full">
+      <h2 className={`${inter.className} text-lg font-semibold text-black mb-3 px-1`}>Filters</h2>
 
-      {/* Filter Buttons */}
-      <div className="flex gap-3 flex-wrap justify-center sm:justify-start">
-        {filtersConfig.map((filter) => (
-          <div key={filter.key} className="relative">
-            {/* Filter Button */}
-            <button
-              onClick={() => setOpenFilter(openFilter === filter.key ? null : filter.key)}
-              className={`${inter.className} flex items-center px-3 py-1.5 
-              bg-[#823A5E] text-white rounded-full text-sm transition-all duration-200 
-              hover:scale-105 focus:ring-2 focus:ring-offset-2 focus:ring-[#823A5E]`}
-            >
-              {filter.icon}
-              {filter.label}
-              <ChevronDown className="w-4 h-4 ml-1" />
-            </button>
+      {/* ✅ REVERTED: Back to flex-wrap so it flows naturally like before */}
+      <div className="flex flex-wrap gap-3 items-center">
+        {filtersConfig.map((filter) => {
+          const isActive = !!filters[filter.key as keyof FiltersState];
 
-            {/* Dropdown */}
-            <AnimatePresence>
-  {openFilter === filter.key && (
-    <motion.div
-      key={filter.key}
-      initial={{ opacity: 0, y: -10, scaleY: 0.8 }}
-      animate={{ opacity: 1, y: 0, scaleY: 1 }}
-      exit={{ opacity: 0, y: -10, scaleY: 0.8 }}
-      transition={{ duration: 0.2, ease: "easeOut" }}
-      className="absolute top-10 left-0 origin-top bg-white rounded-xl shadow-lg p-2 z-50 
-      w-40 sm:w-48 text-sm border border-gray-100"
-    >
-      {filter.options.map((option) => {
-        const isSelected = filters[filter.key] === option.value;
-        return (
-          <div
-            key={option.value}
-            onClick={() =>
-              setFilters((prev) => ({
-                ...prev,
-                [filter.key]: prev[filter.key] === option.value ? null : option.value,
-              }))
-            }
-            className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-100 rounded-lg transition"
-          >
-            <div
-              className={`w-5 h-5 flex items-center justify-center rounded-full border ${
-                isSelected ? "bg-[#823A5E] border-[#823A5E]" : "border-gray-400"
-              }`}
-            >
-              {isSelected && <Check className="w-3 h-3 text-white" />}
+          return (
+            <div key={filter.key} className="relative">
+              <button
+                onClick={() => setOpenFilter(openFilter === filter.key ? null : filter.key)}
+                className={`
+                  flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border
+                  ${isActive 
+                    ? "bg-[#823A5E] text-white border-[#823A5E] shadow-md" 
+                    : "bg-white text-gray-700 border-gray-200 hover:border-gray-300"
+                  }
+                `}
+              >
+                {filter.icon}
+                {filter.label}
+                <ChevronDown size={14} className={`transition-transform duration-200 ${openFilter === filter.key ? "rotate-180" : ""}`} />
+              </button>
+
+              <AnimatePresence>
+                {openFilter === filter.key && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                    // ✅ FIXED: Added z-[60] so it definitely floats OVER the Creator Cards
+                    className="absolute top-full mt-2 left-0 z-[60] w-56 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden"
+                  >
+                    <div className="max-h-60 overflow-y-auto p-1">
+                      {filter.options.length === 0 ? (
+                        <div className="p-3 text-gray-400 text-xs text-center">No options</div>
+                      ) : (
+                        filter.options.map((option) => {
+                          const isSelected = filters[filter.key as keyof FiltersState] === option.value;
+                          return (
+                            <button
+                              key={option.value}
+                              onClick={() => {
+                                onFilterChange(filter.key as keyof FiltersState, isSelected ? null : option.value);
+                                setOpenFilter(null);
+                              }}
+                              className="w-full flex items-center justify-between px-3 py-2.5 text-sm text-left hover:bg-gray-50 rounded-lg transition-colors group"
+                            >
+                              <span className={`${isSelected ? "text-[#823A5E] font-semibold" : "text-gray-700"}`}>
+                                {option.label}
+                              </span>
+                              {isSelected && <Check size={14} className="text-[#823A5E]" />}
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
-            <span>{option.label}</span>
-          </div>
-        );
-      })}
-    </motion.div>
-  )}
-</AnimatePresence>
-
-          </div>
-        ))}
+          );
+        })}
+        
+        {Object.values(filters).some(Boolean) && (
+           <button 
+             onClick={() => {
+                // Add your clear logic here
+             }}
+             className="text-xs text-gray-500 underline px-2"
+           >
+             Reset
+           </button>
+        )}
       </div>
     </div>
   );
