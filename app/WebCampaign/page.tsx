@@ -144,7 +144,8 @@ export default function WebCampaign() {
     await deleteCampaign(id);
   };
 
-  const handleFinalSubmit = async () => {
+const handleFinalSubmit = async () => {
+    // 1. Validation
     const required = [
       formData.title, formData.description, formData.budget, 
       formData.startDate, formData.endDate, formData.niche
@@ -166,11 +167,16 @@ export default function WebCampaign() {
     const toastId = toast.loading("Creating campaign...");
 
     try {
+      // --- STEP 1: Create Campaign ---
       const { min, max } = getFollowerRange(formData.reach);
+      
       const payload = {
         title: formData.title,
         description: formData.description,
         brief: formData.briefText || " ",
+        // ✅ FIX: Added this back. The backend likely expects this field to exist.
+        // If your backend specifically wants "campaign_image", change this key to "campaign_image"
+        brief_file_url: " ", 
         budget: parseInt(formData.budget),
         start_date: start.toISOString(),
         end_date: end.toISOString(),
@@ -188,17 +194,27 @@ export default function WebCampaign() {
       if (res.success && res.data) {
         const { campaign, recommendations } = res.data as CreateCampaignResponse;
         let finalBriefUrl = "";
+        
+        // [LOGIC] Logic to handle missing recommendations
         let finalRecommendations = recommendations || [];
 
+        // --- STEP 2: Upload File ---
         if (selectedFile) {
           toast.loading("Uploading brief...", { id: toastId });
           const uploadRes = await uploadCampaignBrief(campaign.id, selectedFile);
           if (uploadRes.success && uploadRes.data) {
             finalBriefUrl = uploadRes.data.brief_url;
-            await updateCampaign(campaign.id, { ...campaign, brief_file_url: finalBriefUrl });
+            
+            // --- STEP 3: Update Campaign with URL ---
+            // Ensure this key matches what your backend expects (brief_file_url vs campaign_image)
+            await updateCampaign(campaign.id, { 
+                ...campaign, 
+                brief_file_url: finalBriefUrl 
+            });
           }
         }
 
+        // --- STEP 4: Fallback Recommendations ---
         if (finalRecommendations.length === 0) {
           toast.loading("Finding best creators...", { id: toastId });
           const recRes = await getRecommendations({
@@ -214,6 +230,8 @@ export default function WebCampaign() {
         }
 
         toast.success("Campaign created!", { id: toastId });
+        
+        // Update UI
         setCampaigns(prev => [...prev, {
           id: campaign.id,
           title: campaign.title,
@@ -226,6 +244,7 @@ export default function WebCampaign() {
         setStep(0);
         setShowCreatorPicker(true);
         
+        // Reset
         setSelectedFile(null);
         setFormData({ 
             title: "", description: "", budget: "", startDate: "", endDate: "",
@@ -237,6 +256,7 @@ export default function WebCampaign() {
       }
     } catch (err: any) {
       toast.error(err.message || "Error creating campaign", { id: toastId });
+      console.error(err);
     } finally {
       setIsSubmitting(false);
     }

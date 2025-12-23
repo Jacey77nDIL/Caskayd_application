@@ -616,3 +616,17 @@ export const updateCampaign = async (id: number, payload: any): Promise<ApiRespo
     return { success: false, message: (error as Error).message };
   }
 };
+
+export const getCreatorProfile = async (): Promise<ApiResponse> => {
+  try {
+    const response = await fetchWithAuth("/creator/profile", { method: "GET" });
+    // Normalize: if response.data exists, return it, otherwise return response directly if structure varies
+    return { 
+        success: true, 
+        data: response.data || response 
+    };
+  } catch (error) {
+    console.error("Failed to fetch creator profile:", error);
+    return { success: false, message: (error as Error).message };
+  }
+};

@@ -1,3 +1,4 @@
+//TopNavbar
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -6,9 +7,9 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { Inter } from "next/font/google";
-import { motion, AnimatePresence } from "framer-motion"; // ✅ Import Framer Motion
+import { motion, AnimatePresence } from "framer-motion"; 
 import ProfileModal from "@/components/ProfileModal";
-import { getCurrentUser } from "@/utils/api"; 
+import { getCreatorProfile } from "@/utils/api"; // ✅ Use specific endpoint
 
 const inter = Inter({
   subsets: ["latin"],
@@ -16,18 +17,28 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
+// Define User Type
+type User = {
+  id?: number;
+  name: string;
+  email: string;
+  location: string;
+  bio?: string;
+  image: string;
+};
+
 export default function TopNavbar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const [user, setUser] = useState({
+  const [user, setUser] = useState<User>({
     name: "Loading...",
     email: "",
-    password: "", 
     location: "",
-    image: "/images/avatar.png", 
+    bio: "",
+    image: "/images/profile.jpg", 
   });
 
   const links = [
@@ -38,15 +49,17 @@ export default function TopNavbar() {
   useEffect(() => {
     async function fetchUser() {
       try {
-        const res = await getCurrentUser();
+        const res = await getCreatorProfile();
         if (res.success && res.data) {
-          setUser((prev) => ({
-            ...prev,
-            name: res.data.name || "User",
-            email: res.data.email || "",
-            location: res.data.location || "",
-            image: res.data.image || "/images/avatar.png",
-          }));
+          const data = res.data;
+          setUser({
+            id: data.id,
+            name: data.name || "User",
+            email: data.email || "",
+            location: data.location || "Lagos, NG",
+            bio: data.bio || "",
+            image: data.profile_picture || "/images/profile.jpg",
+          });
         }
       } catch (error) {
         console.error("Failed to load user info");
@@ -71,14 +84,14 @@ export default function TopNavbar() {
         {/* Desktop Links */}
         <ul className="hidden md:flex gap-2 items-center text-black bg-gray-50/50 p-1 rounded-full border border-gray-100">
           {links.map((link) => {
-            const isActive = pathname.startsWith(link.href); // Slightly looser match for sub-pages
+            const isActive = pathname.startsWith(link.href);
             return (
               <li key={link.name}>
                 <Link
                   href={link.href}
                   className={`${inter.className} relative px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 block ${
                     isActive 
-                      ? "text-[#823A5E] bg-white shadow-sm" // Active Pill Style
+                      ? "text-[#823A5E] bg-white shadow-sm" 
                       : "text-gray-500 hover:text-gray-900 hover:bg-gray-200/50"
                   }`}
                 >
@@ -89,23 +102,23 @@ export default function TopNavbar() {
           })}
         </ul>
 
-        {/* Right Section: Mobile Toggle + Avatar */}
+        {/* Right Section */}
         <div className="flex items-center gap-4">
             
-            {/* Desktop Avatar (Hidden on mobile to save space, or keep visible if you prefer) */}
+            {/* Desktop Avatar */}
             <div className="relative h-10 w-10 hidden md:block group">
                 {loading ? (
                 <div className="h-10 w-10 rounded-full bg-gray-200 animate-pulse" />
                 ) : (
-                <div className="relative">
-                    <Image
-                        src={user.image}
-                        alt="profile"
-                        width={40}
-                        height={40}
-                        className="rounded-full cursor-pointer object-cover ring-2 ring-transparent group-hover:ring-[#823A5E] transition-all duration-300"
-                        onClick={() => setIsModalOpen(true)}
-                    />
+                <div className="relative cursor-pointer" onClick={() => setIsModalOpen(true)}>
+                    <div className="relative w-10 h-10 rounded-full overflow-hidden border border-gray-200 ring-2 ring-transparent group-hover:ring-[#823A5E] transition-all">
+                        <Image
+                            src={user.image}
+                            alt="profile"
+                            fill
+                            className="object-cover"
+                        />
+                    </div>
                     {/* Status Indicator */}
                     <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
                 </div>
@@ -121,7 +134,7 @@ export default function TopNavbar() {
             </button>
         </div>
 
-        {/* Mobile Menu Dropdown (Animated) */}
+        {/* Mobile Menu Dropdown */}
         <AnimatePresence>
             {isOpen && (
             <motion.div 
@@ -160,12 +173,12 @@ export default function TopNavbar() {
                             setIsModalOpen(true);
                         }}
                     >
-                    <div className="relative h-10 w-10">
+                    <div className="relative h-10 w-10 rounded-full overflow-hidden border border-gray-200">
                         <Image
                         src={user.image}
                         alt="profile"
                         fill
-                        className="rounded-full object-cover"
+                        className="object-cover"
                         />
                     </div>
                     <div>

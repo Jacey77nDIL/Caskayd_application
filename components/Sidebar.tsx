@@ -11,8 +11,8 @@ import {
   LogOut,
   Menu,
   X,
-  Pencil,
-  Camera,
+  MapPin,
+  Mail,
   Megaphone,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -29,6 +29,7 @@ type User = {
   email: string;
   location: string;
   image: string;
+  bio?: string; // Added Bio/Description field
 };
 
 type SidebarContentProps = {
@@ -47,7 +48,6 @@ type ProfileModalProps = {
   isModalOpen: boolean;
   setIsModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
   user: User;
-  setUser: React.Dispatch<React.SetStateAction<User>>;
 };
 
 /* ================= MAIN SIDEBAR ================= */
@@ -61,6 +61,7 @@ export default function Sidebar() {
     email: "",
     location: "Nigeria",
     image: "/images/profile.jpg",
+    bio: "",
   });
 
   useEffect(() => {
@@ -69,10 +70,11 @@ export default function Sidebar() {
       if (res.success && res.data) {
         setUser((prev) => ({
           ...prev,
-          name: res.data.name || "User",
+          name: res.data.name || "Business",
           email: res.data.email || "",
           location: res.data.location || "Nigeria",
           image: res.data.image || prev.image,
+          bio: res.data.bio || "",
         }));
       }
     }
@@ -139,12 +141,11 @@ export default function Sidebar() {
         )}
       </AnimatePresence>
 
-      {/* 👤 Profile Modal */}
+      {/* 👤 Profile Modal (View Only) */}
       <ProfileModal
         isModalOpen={isModalOpen}
         setIsModalOpen={setIsModalOpen}
         user={user}
-        setUser={setUser}
       />
     </>
   );
@@ -225,32 +226,17 @@ function SidebarLink({ href, icon, label }: SidebarLinkProps) {
   );
 }
 
-/* ================= PROFILE MODAL ================= */
+/* ================= VIEW ONLY PROFILE MODAL ================= */
 function ProfileModal({
   isModalOpen,
   setIsModalOpen,
   user,
-  setUser,
 }: ProfileModalProps) {
-  const [tempUser, setTempUser] = useState<User>(user);
-  const [editing, setEditing] = useState("");
+  const router = useRouter();
 
-  useEffect(() => {
-    if (isModalOpen) setTempUser(user);
-  }, [isModalOpen, user]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setTempUser({ ...tempUser, [e.target.name]: e.target.value });
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) setTempUser({ ...tempUser, image: URL.createObjectURL(file) });
-  };
-
-  const handleSave = () => {
-    setUser(tempUser);
+  const handleEditRedirect = () => {
     setIsModalOpen(false);
+    router.push("/WebBusinessProfile");
   };
 
   return (
@@ -264,83 +250,67 @@ function ProfileModal({
           onClick={() => setIsModalOpen(false)}
         >
           <motion.div
-            // [MOBILE] Slide up from bottom
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-white w-full sm:w-[450px] rounded-t-3xl sm:rounded-3xl p-6 sm:p-8 shadow-2xl relative max-h-[85vh] overflow-y-auto"
+            className="bg-white w-full sm:w-[400px] rounded-t-3xl sm:rounded-3xl shadow-2xl relative overflow-hidden"
           >
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Edit Profile</h2>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="p-2 bg-gray-100 rounded-full text-gray-500 hover:bg-gray-200 transition"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="flex justify-center mb-8">
-              <div className="relative group cursor-pointer">
-                <div className="w-28 h-28 rounded-full border-4 border-gray-50 overflow-hidden shadow-inner">
-                  <Image src={tempUser.image} alt="User" fill className="object-cover" />
-                </div>
-                <label className="absolute bottom-0 right-0 bg-black text-white p-2.5 rounded-full shadow-lg hover:scale-110 transition-transform cursor-pointer">
-                  <Camera size={16} />
-                  <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
-                </label>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <EditableInfoRow label="Name" name="name" value={tempUser.name} editing={editing} setEditing={setEditing} handleChange={handleChange} />
-              <EditableInfoRow label="Email" name="email" value={tempUser.email} editing={editing} setEditing={setEditing} handleChange={handleChange} />
-              <EditableInfoRow label="Location" name="location" value={tempUser.location} editing={editing} setEditing={setEditing} handleChange={handleChange} />
-            </div>
+            {/* Header Background */}
+            <div className="h-24 bg-[#823A5E]/10 w-full absolute top-0 left-0" />
 
             <button
-              onClick={handleSave}
-              className="mt-8 w-full bg-[#823A5E] text-white py-3.5 rounded-xl font-semibold shadow-lg hover:bg-[#6b264f] active:scale-95 transition-all"
+              onClick={() => setIsModalOpen(false)}
+              className="absolute top-4 right-4 p-2 bg-white/50 hover:bg-white rounded-full text-gray-500 hover:text-black transition z-10"
             >
-              Save Changes
+              <X size={20} />
             </button>
+
+            <div className="pt-12 px-6 pb-8 flex flex-col items-center relative">
+              {/* Profile Image */}
+              <div className="relative w-28 h-28 rounded-full border-[4px] border-white shadow-md bg-gray-50 mb-4 overflow-hidden">
+                <Image 
+                  src={user.image} 
+                  alt={user.name} 
+                  fill
+                  className="object-cover"
+                />
+              </div>
+
+              {/* Info */}
+              <h2 className="text-2xl font-bold text-gray-900 text-center">{user.name}</h2>
+              {user.bio && <p className="text-sm text-gray-500 text-center mt-2 max-w-[90%]">{user.bio}</p>}
+
+              {/* Data List */}
+              <div className="w-full mt-8 space-y-3">
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                  <div className="p-2 bg-white rounded-full text-[#823A5E] shadow-sm"><Mail size={16} /></div>
+                  <div>
+                    <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Email</p>
+                    <p className="text-sm font-semibold text-gray-700 truncate max-w-[220px]">{user.email}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                  <div className="p-2 bg-white rounded-full text-[#823A5E] shadow-sm"><MapPin size={16} /></div>
+                  <div>
+                    <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Location</p>
+                    <p className="text-sm font-semibold text-gray-700">{user.location || "Not set"}</p>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={handleEditRedirect}
+                className="w-full mt-8 bg-black text-white py-3.5 rounded-xl font-semibold shadow-lg hover:scale-[1.02] active:scale-95 transition-all"
+              >
+                Edit Profile
+              </button>
+            </div>
           </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
-  );
-}
-
-function EditableInfoRow({ label, name, value, editing, setEditing, handleChange, type = "text" }: any) {
-  const isActive = editing === name;
-  return (
-    <div className="border-b border-gray-100 pb-2">
-      <div className="flex justify-between items-center mb-1">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{label}</p>
-        <button onClick={() => setEditing(isActive ? "" : name)} className="p-1.5 hover:bg-gray-100 rounded-full text-gray-400 hover:text-[#823A5E] transition">
-          <Pencil size={14} />
-        </button>
-      </div>
-      <AnimatePresence mode="wait">
-        {isActive ? (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
-            <input
-              autoFocus
-              type={type}
-              name={name}
-              value={value}
-              onChange={handleChange}
-              className="w-full text-gray-900 font-medium bg-gray-50 p-2 rounded-lg focus:ring-2 focus:ring-[#823A5E]/20 focus:outline-none"
-            />
-          </motion.div>
-        ) : (
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-gray-900 font-medium py-2">
-            {type === "password" ? "••••••••" : value || "Not set"}
-          </motion.p>
-        )}
-      </AnimatePresence>
-    </div>
   );
 }
