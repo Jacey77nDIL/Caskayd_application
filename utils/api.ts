@@ -47,6 +47,9 @@ export interface CampaignInvitation {
   status: "invited" | "accepted" | "declined";
   invited_at: string;
   responded_at?: string | null;
+  // New Fields
+  campaign_image?: string | null;
+  campaign_brief_file_url?: string | null;
 }
   // --- HELPER: Consistent Fetching ---
 // utils/api.ts
@@ -103,25 +106,25 @@ async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
 
 export const getCampaignInvitations = async (status?: string): Promise<ApiResponse> => {
   try {
-    // Build query string if status is provided
     const query = status ? `?status=${status}` : "";
-    const endpoint = `/campaigns/invitations${query}`;
+    const response = await fetchWithAuth(`/campaigns/invitations${query}`, { method: "GET" });
     
-    const response = await fetchWithAuth(endpoint, { method: "GET" });
-    
-    // The backend returns { success: true, data: { invitations: [...] } }
-    // We want to return just the array if possible, or the whole data object
+    // ✅ FIX: Handle the new nested structure { data: { invitations: [] } }
     if (response.success && response.data?.invitations) {
-        return { success: true, data: response.data.invitations };
+       return { success: true, data: response.data.invitations };
     }
     
-    return { success: true, data: [] }; // Return empty array if no invitations found
+    // Fallback for older structure
+    if (response.success && Array.isArray(response.data)) {
+       return { success: true, data: response.data };
+    }
+    
+    return { success: true, data: [] }; 
   } catch (error) {
     console.error("Failed to fetch invitations:", error);
     return { success: false, message: (error as Error).message };
   }
 };
-
 export const uploadProfilePicture = async (file: File) => {
   try {
     const token = getToken();
@@ -178,49 +181,7 @@ export const uploadProfilePicture = async (file: File) => {
 // ==========================================
 // RECOMMENDATIONS (Updated)
 // ==========================================
-export const getRecommendations = async (params: Record<string, string | number> = {}): Promise<ApiResponse> => {
-  try {
-    const backendParams: Record<string, string> = {
-      offset: (params.offset || 0).toString(),
-      limit: (params.limit || 20).toString(),
-    };
 
-    if (params.search) backendParams.search = String(params.search);
-    if (params.min_followers) backendParams.min_followers = String(params.min_followers);
-    if (params.max_followers) backendParams.max_followers = String(params.max_followers);
-    if (params.niche) backendParams.niches = String(params.niche);
-
-    // NEW: Map Engagement Rate
-    // API expects a number (e.g., 3 for 3%)
-    if (params.engagement_rate) {
-        backendParams.engagement_rate = String(params.engagement_rate);
-    }
-
-    const query = new URLSearchParams(backendParams).toString();
-    const rawData = await fetchWithAuth(`/recommendations?${query}`, { method: "GET" });
-
-    // ... (Keep existing response normalization logic)
-    let creatorsList: Creator[] = [];
-    if (rawData?.data && Array.isArray(rawData.data.recommendations)) {
-      creatorsList = rawData.data.recommendations;
-    } 
-    else if (Array.isArray(rawData.data)) {
-        creatorsList = rawData.data;
-    }
-
-    return { 
-      success: true, 
-      data: { 
-        recommendations: creatorsList, 
-        pagination: rawData.data?.pagination || {} 
-      } 
-    };
-
-  } catch (error) {
-    console.error("Failed to get recommendations:", error);
-    return { success: false, message: (error as Error).message };
-  }
-};
 
   export const getIndustries = async (): Promise<ApiResponse> => {
     try {
@@ -258,15 +219,7 @@ export const getRecommendations = async (params: Record<string, string | number>
   // 3. CAMPAIGNS
   // ==========================================
 
-  export const getCampaigns = async (): Promise<ApiResponse> => {
-    try {
-      const data = await fetchWithAuth("/campaigns", { method: "GET" });
-      const campaigns = Array.isArray(data) ? data : (data?.data || []);
-      return { success: true, data: campaigns };
-    } catch (error) {
-      return { success: false, message: (error as Error).message };
-    }
-  };
+
 
   export const getCampaignById = async (id: string | number): Promise<ApiResponse> => {
     try {
@@ -277,26 +230,9 @@ export const getRecommendations = async (params: Record<string, string | number>
     }
   };
 
-  export const createCampaign = async (payload: Record<string, unknown>): Promise<ApiResponse> => {
-    try {
-      const data = await fetchWithAuth("/campaigns", { 
-        method: "POST",
-        body: JSON.stringify(payload)
-      });
-      return { success: true, data };
-    } catch (error) {
-      return { success: false, message: (error as Error).message };
-    }
-  };
+  
 
-  export const deleteCampaign = async (id: number): Promise<ApiResponse> => {
-    try {
-      const data = await fetchWithAuth(`/campaigns/${id}`, { method: "DELETE" });
-      return { success: true, data };
-    } catch (error) {
-      return { success: false, message: (error as Error).message };
-    }
-  };
+ 
 
   // ==========================================
   // 4. CAMPAIGN CREATORS & INVITES
@@ -325,17 +261,7 @@ export const getRecommendations = async (params: Record<string, string | number>
     }
   };
 
-  export const inviteCreators = async (campaignId: number | string, creatorIds: number[]): Promise<ApiResponse> => {
-    try {
-      const data = await fetchWithAuth(`/campaigns/${campaignId}/invite`, {
-        method: "POST",
-        body: JSON.stringify({ creator_ids: creatorIds }),
-      });
-      return { success: true, data };
-    } catch (error) {
-      return { success: false, message: (error as Error).message };
-    }
-  };
+
 
   // ==========================================
   // 5. CHAT
@@ -577,34 +503,88 @@ export async function declineCampaignInvitation(campaignId: number) {
 }
 
 // 1. ADD: Function to upload the brief
-export const uploadCampaignBrief = async (campaignId: number, file: File): Promise<ApiResponse> => {
+
+
+// 2. ADD: Function to update the campaign (PUT)
+
+
+export const getCreatorProfile = async (): Promise<ApiResponse> => {
   try {
-    const token = getToken();
-    const formData = new FormData();
-    formData.append("file", file); // The key 'file' matches your Swagger "file" param
+    const response = await fetchWithAuth("/creator/profile", { method: "GET" });
+    // Normalize: if response.data exists, return it, otherwise return response directly if structure varies
+    return { 
+        success: true, 
+        data: response.data || response 
+    };
+  } catch (error) {
+    console.error("Failed to fetch creator profile:", error);
+    return { success: false, message: (error as Error).message };
+  }
+};
 
-    // Note: campaign_id is a QUERY parameter based on your Swagger docs
-    const res = await fetch(`${API_URL}/upload/campaign-brief?campaign_id=${campaignId}`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        // DO NOT set Content-Type here; let the browser set it for FormData
-      },
-      body: formData,
+
+
+
+
+// ✅ FIXED: Removes hardcoded values and maps dynamic Socials/Category
+export const updateBusinessProfile = async (payload: any): Promise<ApiResponse> => {
+  try {
+    const backendPayload = {
+      // 1. Direct Mappings
+      email: payload.email, 
+      business_name: payload.name, 
+      business_bio: payload.bio,
+      website_url: payload.website,
+      // 2. Dynamic Category (Fix: Was hardcoded to "Business")
+      category: payload.category, 
+      // 3. Dynamic Socials (Fix: Was expecting 'twitter' string, now accepts the full object)
+      socials: payload.socials,
+      // 4. Password (Only include if it exists in payload)
+      ...(payload.password ? { password: payload.password } : {})
+    };
+
+    console.log("Sending Update Payload:", backendPayload); // Check your console to verify!
+
+    const res = await fetchWithAuth("/profile/business/edit", {
+      method: "PUT",
+      body: JSON.stringify(backendPayload),
     });
-
-    if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.detail || "File upload failed");
-    }
-
-    return await res.json();
+    
+    return { success: true, data: res };
   } catch (error) {
     return { success: false, message: (error as Error).message };
   }
 };
 
-// 2. ADD: Function to update the campaign (PUT)
+
+export const getCampaigns = async (): Promise<ApiResponse> => {
+  try {
+    const data = await fetchWithAuth("/campaigns", { method: "GET" });
+    const campaigns = Array.isArray(data) ? data : (data?.data || []);
+    return { success: true, data: campaigns };
+  } catch (error) {
+    return { success: false, message: (error as Error).message };
+  }
+};
+
+/**
+ * Creates a new campaign draft.
+ */
+export const createCampaign = async (payload: Record<string, unknown>): Promise<ApiResponse> => {
+  try {
+    const data = await fetchWithAuth("/campaigns", { 
+      method: "POST", 
+      body: JSON.stringify(payload)
+    });
+    return { success: true, data };
+  } catch (error) {
+    return { success: false, message: (error as Error).message };
+  }
+};
+
+/**
+ * Updates an existing campaign.
+ */
 export const updateCampaign = async (id: number, payload: any): Promise<ApiResponse> => {
   try {
     const res = await fetchWithAuth(`/campaigns/${id}`, {
@@ -617,16 +597,114 @@ export const updateCampaign = async (id: number, payload: any): Promise<ApiRespo
   }
 };
 
-export const getCreatorProfile = async (): Promise<ApiResponse> => {
+/**
+ * Deletes a campaign by ID.
+ */
+export const deleteCampaign = async (id: number): Promise<ApiResponse> => {
   try {
-    const response = await fetchWithAuth("/creator/profile", { method: "GET" });
-    // Normalize: if response.data exists, return it, otherwise return response directly if structure varies
-    return { 
-        success: true, 
-        data: response.data || response 
-    };
+    const data = await fetchWithAuth(`/campaigns/${id}`, { method: "DELETE" });
+    return { success: true, data };
   } catch (error) {
-    console.error("Failed to fetch creator profile:", error);
+    return { success: false, message: (error as Error).message };
+  }
+};
+
+// --- FILE UPLOAD ENDPOINTS ---
+
+/**
+ * Uploads a brief (PDF/Doc) for a specific campaign.
+ */
+export const uploadCampaignBrief = async (campaignId: number, file: File): Promise<ApiResponse> => {
+  try {
+    const token = getToken();
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch(`${API_URL}/upload/campaign-brief?campaign_id=${campaignId}`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+
+    if (!res.ok) throw new Error("File upload failed");
+    return await res.json();
+  } catch (error) {
+    return { success: false, message: (error as Error).message };
+  }
+};
+
+/**
+ * [NEW] Uploads a cover image for a specific campaign.
+ */
+export const uploadCampaignImage = async (campaignId: number, file: File): Promise<ApiResponse> => {
+  try {
+    const token = getToken();
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch(`${API_URL}/upload/campaign-image?campaign_id=${campaignId}`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+
+    if (!res.ok) throw new Error("Image upload failed");
+    return await res.json();
+  } catch (error) {
+    return { success: false, message: (error as Error).message };
+  }
+};
+// --- RECOMMENDATION ENDPOINTS ---
+
+/**
+ * Fetches creator recommendations based on filters.
+ */
+export const getRecommendations = async (params: Record<string, string | number> = {}): Promise<ApiResponse> => {
+  try {
+    const backendParams: Record<string, string> = {
+      offset: (params.offset || 0).toString(),
+      limit: (params.limit || 20).toString(),
+    };
+
+    if (params.niche) backendParams.niches = String(params.niche);
+    // Add other filters as needed
+
+    const query = new URLSearchParams(backendParams).toString();
+    const rawData = await fetchWithAuth(`/recommendations?${query}`, { method: "GET" });
+
+    // ✅ ROBUST NORMALIZATION: Handle if data is array OR nested object
+    let creatorsList = [];
+    
+    // Case 1: Response is { success: true, data: [...] }
+    if (Array.isArray(rawData.data)) {
+      creatorsList = rawData.data;
+    } 
+    // Case 2: Response is { success: true, data: { recommendations: [...] } }
+    else if (rawData.data?.recommendations) {
+      creatorsList = rawData.data.recommendations;
+    }
+    // Case 3: Response is directly the array (rare but safe to check)
+    else if (Array.isArray(rawData)) {
+      creatorsList = rawData;
+    }
+
+    return { success: true, data: creatorsList };
+  } catch (error) {
+    return { success: false, message: (error as Error).message };
+  }
+};
+
+/**
+ * Invites a list of creators to a campaign.
+ */
+export const inviteCreators = async (campaignId: number | string, creatorIds: number[]): Promise<ApiResponse> => {
+  try {
+    const data = await fetchWithAuth(`/campaigns/${campaignId}/invite`, {
+      method: "POST",
+      body: JSON.stringify({ creator_ids: creatorIds }),
+    });
+    return { success: true, data };
+  } catch (error) {
     return { success: false, message: (error as Error).message };
   }
 };

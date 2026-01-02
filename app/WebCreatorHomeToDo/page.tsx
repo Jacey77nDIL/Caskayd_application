@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import TopNavbar from "@/components/TopNavbar";
 import TabsNavbar from "@/components/TabsNavbar";
-import ActiveTaskCard from "@/components/ActiveTaskCard"; // ✅ Import new component
+import ActiveTaskCard from "@/components/ActiveTaskCard"; 
 import RequestModal from "@/components/RequestModal"; 
 import { getCampaignInvitations, CampaignInvitation } from "@/utils/api"; 
 import { Loader2, CheckCircle2 } from "lucide-react";
@@ -12,7 +12,7 @@ import { Loader2, CheckCircle2 } from "lucide-react";
 type Task = {
   id: number;
   company: string;
-  logo: string;
+  logo: string | null; // Allow nulls here to match API data
   title: string;
   status: string;
   deliverables: string[];
@@ -32,20 +32,23 @@ export default function HomeWebCreatorHomeToDoPage() {
       setLoading(true);
       const res = await getCampaignInvitations(); 
 
-      if (res.success && Array.isArray(res.data)) {
-        // 1. Filter only "accepted" items
-        const accepted = res.data.filter((inv: CampaignInvitation) => inv.status === 'accepted');
+      if (res.success) {
+        // 1. Handle nested data structure properly (support both formats)
+        const list = res.data?.invitations || (Array.isArray(res.data) ? res.data : []);
+        
+        // 2. Filter only "accepted" items
+        const accepted = list.filter((inv: CampaignInvitation) => inv.status === 'accepted');
         
         setRawInvitations(accepted);
 
-        // 2. Map to Task format
+        // 3. Map to Task format
         const mappedTasks: Task[] = accepted.map((inv: CampaignInvitation) => ({
           id: inv.id, 
           company: inv.business_name,
-          logo: "/images/placeholder-logo.png", // Replace with real logo if available
+          // ✅ CRITICAL FIX: Map campaign_image here. Fallback happens inside the Card component.
+          logo: inv.campaign_image || null, 
           title: inv.campaign_title,
           status: "In Progress",
-          // You might fetch real deliverables from API later, hardcoded for now
           deliverables: ["Content Creation", "Story Post", "Reel Upload"], 
           price: inv.campaign_budget,
           dueDate: new Date(inv.campaign_end_date).toLocaleDateString(),

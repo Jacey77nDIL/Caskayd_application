@@ -3,12 +3,12 @@
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { CalendarClock, CheckCircle2, ChevronDown } from "lucide-react";
+import { CalendarClock, CheckCircle2 } from "lucide-react";
 
 type Task = {
   id: number;
   company: string;
-  logo: string;
+  logo: string | null; // Update to allow null/undefined
   title: string;
   status: string;
   deliverables: string[];
@@ -25,6 +25,11 @@ type ActiveTaskCardProps = {
 export default function ActiveTaskCard({ task, onClick }: ActiveTaskCardProps) {
   const [hovered, setHovered] = useState(false);
 
+  // ✅ FIX: Safe image handling (matches RequestCard logic)
+  const logoSrc = task.logo && task.logo.trim() !== "" 
+    ? task.logo 
+    : "/images/placeholder-logo.png";
+
   return (
     <motion.div
       onClick={onClick}
@@ -35,7 +40,8 @@ export default function ActiveTaskCard({ task, onClick }: ActiveTaskCardProps) {
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ 
         y: -4, 
-        shadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)" 
+        // ✅ FIX: Use 'boxShadow' for correct Framer Motion animation
+        boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)" 
       }}
       className="group relative flex flex-col bg-white border border-gray-100 
                  rounded-2xl p-5 shadow-sm cursor-pointer overflow-hidden
@@ -52,7 +58,7 @@ export default function ActiveTaskCard({ task, onClick }: ActiveTaskCardProps) {
           <div className="flex items-center space-x-4">
             <div className="relative w-12 h-12 flex-shrink-0">
               <Image
-                src={task.logo}
+                src={logoSrc}
                 alt={task.company}
                 fill
                 className="rounded-full object-cover border border-gray-200"
@@ -66,7 +72,7 @@ export default function ActiveTaskCard({ task, onClick }: ActiveTaskCardProps) {
             </div>
           </div>
 
-          {/* Right: Price & Due Date (Collapsed View) */}
+          {/* Right: Price & Due Date */}
           <div className="text-right flex flex-col items-end">
             <span className="font-bold text-gray-900">₦{task.price.toLocaleString()}</span>
             <div className="flex items-center text-xs text-gray-400 mt-1 gap-1">
@@ -76,14 +82,14 @@ export default function ActiveTaskCard({ task, onClick }: ActiveTaskCardProps) {
           </div>
         </div>
 
-        {/* The Twist: Expandable Deliverables Section */}
+        {/* Expandable Deliverables Section */}
         <AnimatePresence>
           {hovered && (
             <motion.div
               initial={{ opacity: 0, height: 0, marginTop: 0 }}
               animate={{ opacity: 1, height: "auto", marginTop: 12 }}
               exit={{ opacity: 0, height: 0, marginTop: 0 }}
-              className="border-t border-gray-200/50 pt-3"
+              className="border-t border-gray-200/50 pt-3 overflow-hidden"
             >
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Deliverables</p>
               <div className="flex flex-wrap gap-2">

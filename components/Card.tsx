@@ -1,9 +1,9 @@
 "use client";
 
-import { Trash2, CreditCard } from "lucide-react";
+import { Trash2 } from "lucide-react"; 
 import { Inter } from "next/font/google";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion"; // [MODERN] For tap effects
+import { motion } from "framer-motion"; 
 import { useState } from "react";
 
 const inter = Inter({
@@ -19,22 +19,22 @@ type CardProps = {
   onDelete: (id: number) => void;
 };
 
+/**
+ * Card Component
+ * Displays a single campaign summary.
+ * - Handles navigation to details page on click.
+ * - Handles deletion logic.
+ */
 export default function Card({ id, title, date, onDelete }: CardProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    // [UX] Simple confirm logic (can be upgraded to a modal later)
+    e.stopPropagation(); // Stop click from triggering card navigation
     if (confirm("Are you sure you want to delete this campaign?")) {
       setIsDeleting(true);
       onDelete(id);
     }
-  };
-
-  const handlePayment = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    alert("Payment feature coming soon!");
   };
 
   return (
@@ -42,7 +42,7 @@ export default function Card({ id, title, date, onDelete }: CardProps) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      whileHover={{ scale: 1.01 }} // [UX] Micro-interaction on hover
+      whileHover={{ scale: 1.01 }} // Subtle zoom effect for interactivity
       className="w-full"
     >
       <p className={`${inter.className} text-xs text-gray-400 mb-2 pl-1`}>
@@ -55,7 +55,7 @@ export default function Card({ id, title, date, onDelete }: CardProps) {
         p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between 
         gap-4 cursor-pointer hover:shadow-md transition-all duration-300"
       >
-        {/* Left: Title */}
+        {/* Left: Title & Hint */}
         <div className="flex-1">
           <h2 className={`${inter.className} text-gray-900 text-lg font-bold group-hover:text-[#823A5E] transition-colors`}>
             {title}
@@ -65,16 +65,8 @@ export default function Card({ id, title, date, onDelete }: CardProps) {
 
         {/* Right: Actions */}
         <div className="flex items-center gap-3">
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            type="button"
-            onClick={handlePayment}
-            className="flex items-center gap-2 bg-green-50 text-[#246B2C] text-sm font-medium px-4 py-2 rounded-xl hover:bg-green-100 transition-colors"
-          >
-            <CreditCard size={16} />
-            Fund
-          </motion.button>
-
+          {/* Removed 'Fund' button as requested */}
+          
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={handleDelete}

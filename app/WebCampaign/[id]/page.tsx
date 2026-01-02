@@ -107,29 +107,50 @@ export default function CampaignDetailsPage() {
   }, [campaignId]);
 
   // 2. Load Suggested Creators
+// 2. Load Suggested Creators (CORRECTED)
   const loadSuggestions = useCallback(async (isLoadMore = false) => {
     if (isLoadMore && !hasMore) return;
     setSuggestionsLoading(true);
     
     const currentOffset = isLoadMore ? offset : 0;
-    const res = await getRecommendations({ offset: currentOffset, limit: 5 });
+    
+    // Pass filters if you have them (e.g., from campaignDetails)
+    // For now, we just pass offset/limit to ensure we get data
+    const res = await getRecommendations({ 
+        offset: currentOffset, 
+        limit: 5 
+    });
 
     if (res.success && res.data) {
-      const rawRecs = res.data.recommendations || [];
-      const hasMoreRecs = res.data.pagination?.has_more ?? false;
+      // ✅ FIX: Check if 'res.data' is ALREADY the array, otherwise look for '.recommendations'
+      let rawRecs = [];
+      if (Array.isArray(res.data)) {
+         rawRecs = res.data;
+      } else if (res.data.recommendations && Array.isArray(res.data.recommendations)) {
+         rawRecs = res.data.recommendations;
+      }
 
+      console.log("Fixed Raw Recs:", rawRecs); // This should now show 5 items
+
+      // If extraction worked, map the data
       const mappedRecs = rawRecs.map((c: any) => ({
-        id: c.id.toString(),
-        name: c.name,
+        id: c.id?.toString(),
+        name: c.name || "Unknown",
         avatar: c.image || "/images/placeholder-avatar.jpg",
         followers: c.followers_count?.toLocaleString() || "0",
         reach: c.reach_7d?.toLocaleString() || "0",
-        engRate: c.engagement_rate || "0",
+        engRate: typeof c.engagement_rate === 'string' ? c.engagement_rate : `${(c.engagement_rate || 0) * 100}%`,
         platform: c.platform || "Instagram",
         status: "suggestion"
       }));
 
+      // Filter out creators already in the campaign
       const filteredRecs = mappedRecs.filter((c: Creator) => !isInCampaign(c.id));
+
+      // Determine if there are more pages (simple check: if we got full limit, assume more exists)
+      // Or check backend 'pagination' object if available
+      const returnedCount = rawRecs.length;
+      const hasMoreRecs = res.data.pagination?.has_more ?? (returnedCount === 5);
 
       if (isLoadMore) {
         setSuggested(prev => [...prev, ...filteredRecs]);
@@ -139,6 +160,8 @@ export default function CampaignDetailsPage() {
         setOffset(5);
       }
       setHasMore(hasMoreRecs);
+    } else {
+      console.error("Failed to load recommendations:", res.message);
     }
     setSuggestionsLoading(false);
   }, [offset, hasMore, isInCampaign]);
