@@ -433,7 +433,7 @@ export default function WebCampaign() {
             </button>
           </div>
         </div>
-      </Modal>
+      </Modal> 
 
       <CreatorPickerModal
         isOpen={showCreatorPicker}
