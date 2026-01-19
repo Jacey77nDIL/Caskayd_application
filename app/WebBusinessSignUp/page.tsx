@@ -138,7 +138,7 @@ export default function SignupPage() {
       const payload = {
         business_name: data.businessName,
         email: data.email,
-        website_url: data.website,
+        website_url: data.website, 
         password: data.password,
         business_bio: data.description,
         category: data.category,

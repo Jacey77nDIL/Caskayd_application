@@ -1,5 +1,4 @@
 import React from "react";
-import "./style.css";
 import { Box, Button, Link, Stack, Typography } from "@mui/material";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faApple, faLinkedin } from "@fortawesome/free-brands-svg-icons";
@@ -18,329 +17,87 @@ import Image from "next/image";
 
 export default function ContentCreator() {
   return (
-    <div className="landing-page">
-      <Stack
-        style={{
-          position: "fixed",
-          marginTop: "2rem",
-          padding: "1rem",
-          top: 0,
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
-          zIndex: 1000,
-          backgroundColor: "black",
-          borderRadius: 20,
-          overflowY: "hidden",
-        }}
-        sx={{ width: { xs: "90%", sm: "88%", md: "84%", lg: "80%" } }}
-      >
-                <Typography
-          variant="h5"
-          sx={{
-            fontWeight: "light",
-            letterSpacing: 2,
-            textTransform: "uppercase",
-            fontFamily: "Roboto, sans-serif",
-            paddingLeft: { xs: 2, sm: 3, md: 4, lg: 5, xl: 6 },
-            background: "linear-gradient(to right, #846120, #9D2424, #8D077B)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text", // for non-webkit browsers
-            color: "transparent", // fallback
-          }}
-        >
+    <Box sx={styles.landingPage}>
+      {/* Navbar Stack with Glassmorphism */}
+      <Stack sx={styles.navbar}>
+        <Typography variant="h5" sx={styles.logoText}>
           Caskayd
         </Typography>
-        <Link href="/WebCreatorSignUp">
+
+        <Link href="/WebCreatorSignUp" underline="none">
           <Button
             component={Link}
             href="/WebCreatorSignUp"
-            variant="contained"
-            sx={{
-              color: "white",
-              backgroundColor: "transparent",
-              border: "2px solid transparent",
-              transition: "all 0.3s ease",
-              borderRadius: "8px",
-              fontSize: { xs: 12, sm: 16, md: 18, lg: 20, xl: 22 },
-              textWrap: "nowrap",
-
-              "@media (hover: hover)": {
-                "&:hover": {
-                  backgroundColor: "white   ",
-                  transform: "scale(1.05)",
-                  color: "black",
-                  borderColor: "white",
-                },
-              },
-            }}
+            variant="outlined"
+            sx={styles.navButton}
           >
             Start Using Caskayd
           </Button>
         </Link>
       </Stack>
-      <div className="background">
+
+      {/* SECTION 1: Hero - Turn Content Into Income */}
+      <Box sx={styles.backgroundCard}>
         <Box>
           <Stack
-            style={{
+            sx={{
               display: "flex",
               flexDirection: "column",
-              paddingLeft: "10px",
-              paddingRight: "10px",
+              paddingTop: "20px",
+              paddingX: "10px",
               position: "relative",
               overflowY: "hidden",
             }}
           >
-            <Typography
-              sx={{
-                fontSize: { xs: 20, sm: 30, md: 45, lg: 70, xl: 80 },
-                color: "white",
-                fontWeight: "bold",
-                letterSpacing: 2,
-                /* textTransform: "uppercase", */
-                marginBottom: 2,
-                fontFamily: "Roboto, sans-serif",
-                paddingLeft: { xs: 2, sm: 6, md: 8, lg: 10, xl: 13 },
-                paddingRight: { xs: 2, sm: 6, md: 8, lg: 10, xl: 13 },
-                mb: 4,
-              }}
-            >
+            <Typography sx={styles.heroHeading}>
               Turn Your Content Into Income
             </Typography>
-            <Typography
-              sx={{
-                color: "white",
-                fontWeight: "light",
-                letterSpacing: 2,
-                /* textTransform: "uppercase", */
-                marginBottom: 2,
-                fontFamily: "Roboto, sans-serif",
-                paddingLeft: { xs: 2, sm: 6, md: 8, lg: 10, xl: 13 },
-                paddingRight: { xs: 2, sm: 6, md: 8, lg: 10, xl: 13 },
-                fontSize: { xs: 16, sm: 16, md: 18, lg: 20, xl: 22 },
-                mb: 8,
-              }}
-            >
+            <Typography sx={styles.heroSubtext}>
               Ready to monetize your passion? Our platform empowers creators
               like you to effortlessly transform your valuable content into a
-              steady revenue stream
+              steady revenue stream.
             </Typography>
+
+            {/* Store Buttons */}
             <Stack
-              direction={{ xs: "column", sm: "row", md: "row" }}
-              style={{
+              direction={{ xs: "column", sm: "row" }}
+              sx={{
                 display: "flex",
                 width: "100%",
                 alignItems: "center",
                 justifyContent: "center",
-              }}
-              sx={{
-                gap: {
-                  xs: 4,
-                  sm: 8,
-                  md: 12,
-                  lg: 20,
-                },
+                gap: { xs: 3, sm: 4, md: 6 },
+                marginTop: 4,
               }}
             >
-              {/*     <Link>
-                <Button
-                  variant="contained"
-                  sx={{
-                    backgroundColor: "white",
-                    borderRadius: "12px",
-                    color: "black",
-                    fontSize: { xs: 12, sm: 16, md: 18, lg: 20, xl: 22 },
-                    transition: "all 0.3s ease",
-                    textTransform: "none",
-                    fontWeight: "normal",
-                    height: { xs: "40px", sm: "50px", md: "60px", lg: "70px" },
-                    textWrap: "nowrap",
-                    "&:hover": {
-                      transform: "scale(1.05)",
-                      //backgroundColor: "#f0f0f0",
-                      backgroundColor: "#e0e0e0",
-                    },
-                  }}
-                >
-                  Open Caskayd Web
-                </Button>
-              </Link> */}
-              <Link style={{ textDecoration: "none" }}>
-                <Button
-                  variant="contained"
-                  sx={{
-                    backgroundColor: "white",
-                    color: "black",
-                    borderRadius: "12px",
-                    textTransform: "none",
-                    transition: "all 0.3s ease",
-                    display: "inline-flex",
-                    height: { xs: "40px", sm: "50px", md: "60px", lg: "70px" },
-                    alignItems: "center",
-                    "&:hover": {
-                      transform: "scale(1.05)",
-                      backgroundColor: "#e0e0e0",
-                    },
-                  }}
-                >
-                  <Stack
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      justifyContent: "space-evenly",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Box
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                      sx={{
-                        height: {
-                          xs: "15px",
-                          sm: "18px",
-                          md: "24px",
-                          lg: "30px",
-                        },
-                        width: {
-                          xs: "15px",
-                          sm: "18px",
-                          md: "24px",
-                          lg: "30px",
-                        },
-                      }}
-                    >
+              <Link href="#" underline="none">
+                <Button variant="contained" sx={styles.storeButtonWhite}>
+                  <Stack direction="row" alignItems="center" spacing={1.5}>
+                    <Box sx={styles.iconBox}>
                       <FontAwesomeIcon icon={faGooglePlay} />
                     </Box>
-
-                    <Stack
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "space-between",
-                        textAlign: "left",
-                        marginLeft: 10,
-                      }}
-                    >
-                      <Typography
-                        sx={{
-                          textWrap: "nowrap",
-                          fontSize: {
-                            xs: "9px",
-                            sm: "10px",
-                            md: "12px",
-                            lg: "14px",
-                          },
-                          textTransform: "uppercase",
-                          fontWeight: "light",
-                          textAlign: "left",
-                        }}
-                      >
+                    <Stack textAlign="left">
+                      <Typography sx={styles.storeSmallText}>
                         Get it on
                       </Typography>
-                      <Typography
-                        sx={{
-                          textWrap: "nowrap",
-                          fontSize: {
-                            xs: "15px",
-                            sm: "18px",
-                            md: "21px",
-                            lg: "24px",
-                          },
-                        }}
-                      >
+                      <Typography sx={styles.storeLargeText}>
                         Google Play
                       </Typography>
                     </Stack>
                   </Stack>
                 </Button>
               </Link>
-              <Link style={{ textDecoration: "none" }}>
-                <Button
-                  variant="contained"
-                  sx={{
-                    backgroundColor: "black",
-                    color: "white",
-                    borderRadius: "12px",
-                    textTransform: "none",
-                    transition: "all 0.3s ease",
-                    display: "inline-flex",
-                    height: { xs: "40px", sm: "50px", md: "60px", lg: "70px" },
-                    alignItems: "center",
-                    "&:hover": {
-                      transform: "scale(1.05)",
-                      backgroundColor: "#111",
-                    },
-                  }}
-                >
-                  <Stack
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      justifyContent: "space-evenly",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Box
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                      sx={{
-                        height: {
-                          xs: "15px",
-                          sm: "18px",
-                          md: "24px",
-                          lg: "30px",
-                        },
-                        width: {
-                          xs: "15px",
-                          sm: "18px",
-                          md: "24px",
-                          lg: "30px",
-                        },
-                      }}
-                    >
+              <Link href="#" underline="none">
+                <Button variant="contained" sx={styles.storeButtonBlack}>
+                  <Stack direction="row" alignItems="center" spacing={1.5}>
+                    <Box sx={styles.iconBox}>
                       <FontAwesomeIcon icon={faApple} />
                     </Box>
-
-                    <Stack
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "space-between",
-                        marginLeft: 10,
-                      }}
-                    >
-                      <Typography
-                        sx={{
-                          textWrap: "nowrap",
-                          fontSize: {
-                            xs: "9px",
-                            sm: "10px",
-                            md: "12px",
-                            lg: "14px",
-                          },
-                        }}
-                      >
+                    <Stack textAlign="left">
+                      <Typography sx={styles.storeSmallText}>
                         Download on the
                       </Typography>
-                      <Typography
-                        sx={{
-                          textWrap: "nowrap",
-                          fontSize: {
-                            xs: "15px",
-                            sm: "18px",
-                            md: "21px",
-                            lg: "24px",
-                          },
-                        }}
-                      >
+                      <Typography sx={styles.storeLargeText}>
                         App Store
                       </Typography>
                     </Stack>
@@ -350,1026 +107,414 @@ export default function ContentCreator() {
             </Stack>
           </Stack>
         </Box>
-        <Stack
-          sx={{
-            position: "relative",
-            width: "100%",
-            maxWidth: "900px",
-            aspectRatio: "4 / 2",
-            bottom: 0,
-            height: { xs: "15vh", sm: "20vh", md: "20vh", lg: "40vh" },
-            marginTop: 10,
-          }}
-        >
+
+        {/* Hero Image Container */}
+        <Stack sx={styles.imageContainer}>
           <Image
             src="/images/ecommerce.jpeg"
             alt="ec"
             fill
-            style={{ objectFit: "inherit", borderRadius: 10 }}
+            style={{ objectFit: "cover", borderRadius: 10 }}
           />
         </Stack>
-      </div>
-      <Typography
-        sx={{
-          fontSize: { xs: 15, sm: 25, md: 30, lg: 50, xl: 65 },
-          color: "white",
-          fontWeight: "light",
-          letterSpacing: 2,
-          /* textTransform: "uppercase", */
-          marginTop: 5,
-          fontFamily: "Roboto, sans-serif",
-          paddingLeft: { xs: 2, sm: 6, md: 8, lg: 10, xl: 13 },
-          paddingRight: { xs: 2, sm: 6, md: 8, lg: 10, xl: 13 },
-          mb: 4,
-        }}
-      >
+      </Box>
+
+      {/* SECTION 2: Platform Links */}
+      <Typography sx={styles.sectionTitle}>
         Advertise with any of your platforms
       </Typography>
-      <Stack
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-evenly",
-          width: "95%",
-          overflowY: "hidden",
-          height: 100,
-        }}
-        sx={{
-          gap: {
-            xs: 4,
-            sm: 8,
-            md: 12,
-            lg: 20,
-          },
-          marginBottom: {
-            xs: 0.5,
-            sm: 1,
-            md: 1.5,
-            lg: 3,
-          },
-        }}
-      >
-        <Stack
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "space-evenly",
-            alignItems: "center",
-          }}
-          sx={{
-            gap: {
-              xs: 0.4,
-              sm: 0.6,
-              md: 0.8,
-              lg: 1,
-            },
-          }}
-        >
-          <Box
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            sx={{
-              height: {
-                xs: "15px",
-                sm: "18px",
-                md: "24px",
-                lg: "30px",
-              },
-              width: {
-                xs: "15px",
-                sm: "18px",
-                md: "24px",
-                lg: "30px",
-              },
-            }}
-          >
-            <FontAwesomeIcon icon={faInstagram} style={{ color: "white" }} />
+
+      {/* Social Icons Strip 1 */}
+      <Stack sx={styles.socialStrip}>
+        {[faInstagram, faFacebookF, faTiktok, faYoutube].map((icon, index) => (
+          <Box key={index} sx={styles.socialIconBox}>
+            <FontAwesomeIcon icon={icon} />
           </Box>
-        </Stack>
-        <Stack
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "space-evenly",
-            alignItems: "center",
-          }}
-          sx={{
-            gap: {
-              xs: 0.4,
-              sm: 0.6,
-              md: 0.8,
-              lg: 1,
-            },
-          }}
-        >
-          {" "}
-          <Box
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            sx={{
-              height: {
-                xs: "15px",
-                sm: "18px",
-                md: "24px",
-                lg: "30px",
-              },
-              width: {
-                xs: "15px",
-                sm: "18px",
-                md: "24px",
-                lg: "30px",
-              },
-            }}
-          >
-            <FontAwesomeIcon icon={faFacebookF} style={{ color: "white" }} />
-          </Box>
-        </Stack>
-        <Stack
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "space-evenly",
-            alignItems: "center",
-          }}
-          sx={{
-            gap: {
-              xs: 0.4,
-              sm: 0.6,
-              md: 0.8,
-              lg: 1,
-            },
-          }}
-        >
-          <Box
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            sx={{
-              height: {
-                xs: "15px",
-                sm: "18px",
-                md: "24px",
-                lg: "30px",
-              },
-              width: {
-                xs: "15px",
-                sm: "18px",
-                md: "24px",
-                lg: "30px",
-              },
-            }}
-          >
-            <FontAwesomeIcon icon={faTiktok} style={{ color: "white" }} />
-          </Box>
-        </Stack>
-        <Stack
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "space-evenly",
-            alignItems: "center",
-          }}
-          sx={{
-            gap: {
-              xs: 0.4,
-              sm: 0.6,
-              md: 0.8,
-              lg: 1,
-            },
-          }}
-        >
-          <Box
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            sx={{
-              height: {
-                xs: "15px",
-                sm: "18px",
-                md: "24px",
-                lg: "30px",
-              },
-              width: {
-                xs: "15px",
-                sm: "18px",
-                md: "24px",
-                lg: "30px",
-              },
-            }}
-          >
-            <FontAwesomeIcon icon={faYoutube} style={{ color: "white" }} />
-          </Box>
-        </Stack>
+        ))}
       </Stack>
-      <Stack
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-evenly",
-          width: "95%",
-          overflowY: "hidden",
-          height: 100,
-        }}
-        sx={{
-          gap: {
-            xs: 4,
-            sm: 8,
-            md: 12,
-            lg: 20,
-          },
-          marginBottom: {
-            xs: 2,
-            sm: 4,
-            md: 6,
-            lg: 8,
-          },
-        }}
-      >
-        <Stack
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "space-evenly",
-            alignItems: "center",
-          }}
-          sx={{
-            gap: {
-              xs: 0.4,
-              sm: 0.6,
-              md: 0.8,
-              lg: 1,
-            },
-          }}
-        >
-          <Box
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            sx={{
-              height: {
-                xs: "15px",
-                sm: "18px",
-                md: "24px",
-                lg: "30px",
-              },
-              width: {
-                xs: "15px",
-                sm: "18px",
-                md: "24px",
-                lg: "30px",
-              },
-            }}
-          >
-            <FontAwesomeIcon icon={faXTwitter} style={{ color: "white" }} />
-          </Box>
-        </Stack>
-        <Stack
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "space-evenly",
-            alignItems: "center",
-          }}
-          sx={{
-            gap: {
-              xs: 0.4,
-              sm: 0.6,
-              md: 0.8,
-              lg: 1,
-            },
-          }}
-        >
-          <Box
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            sx={{
-              height: {
-                xs: "15px",
-                sm: "18px",
-                md: "24px",
-                lg: "30px",
-              },
-              width: {
-                xs: "15px",
-                sm: "18px",
-                md: "24px",
-                lg: "30px",
-              },
-            }}
-          >
-            <FontAwesomeIcon icon={faWhatsapp} style={{ color: "white" }} />
-          </Box>
-        </Stack>
-        <Stack
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "space-evenly",
-            alignItems: "center",
-          }}
-          sx={{
-            gap: {
-              xs: 0.4,
-              sm: 0.6,
-              md: 0.8,
-              lg: 1,
-            },
-          }}
-        >
-          <Box
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            sx={{
-              height: {
-                xs: "15px",
-                sm: "18px",
-                md: "24px",
-                lg: "30px",
-              },
-              width: {
-                xs: "15px",
-                sm: "18px",
-                md: "24px",
-                lg: "30px",
-              },
-            }}
-          >
-            <FontAwesomeIcon
-              icon={faSnapchatGhost}
-              style={{ color: "white" }}
-            />
-          </Box>
-        </Stack>
-        <Stack
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "space-evenly",
-            alignItems: "center",
-          }}
-          sx={{
-            gap: {
-              xs: 0.4,
-              sm: 0.6,
-              md: 0.8,
-              lg: 1,
-            },
-          }}
-        >
-          <Box
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            sx={{
-              height: {
-                xs: "15px",
-                sm: "18px",
-                md: "24px",
-                lg: "30px",
-              },
-              width: {
-                xs: "15px",
-                sm: "18px",
-                md: "24px",
-                lg: "30px",
-              },
-            }}
-          >
-            <FontAwesomeIcon
-              icon={faTelegramPlane}
-              style={{ color: "white" }}
-            />
-          </Box>
-        </Stack>
+
+      {/* Social Icons Strip 2 */}
+      <Stack sx={{ ...styles.socialStrip, marginBottom: { xs: 6, md: 10 } }}>
+        {[faXTwitter, faWhatsapp, faSnapchatGhost, faTelegramPlane].map(
+          (icon, index) => (
+            <Box key={index} sx={styles.socialIconBox}>
+              <FontAwesomeIcon icon={icon} />
+            </Box>
+          )
+        )}
       </Stack>
-      <Stack
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "center",
-          marginBottom: 3,
-        }}
-      >
-        <Typography
-          sx={{
-            fontSize: { xs: 17, sm: 26, md: 38, lg: 50, xl: 60 },
-            color: "white",
-            fontWeight: "bold",
-            letterSpacing: 2,
-            /* textTransform: "uppercase", */
-            marginBottom: 2,
-            fontFamily: "Roboto, sans-serif",
-            paddingLeft: { xs: 2, sm: 6, md: 8, lg: 10, xl: 13 },
-            paddingRight: { xs: 2, sm: 6, md: 8, lg: 10, xl: 13 },
-          }}
-        >
-          Earn From Every Post
-        </Typography>
-      </Stack>
-      <Typography
-        sx={{
-          color: "white",
-          fontWeight: "light",
-          letterSpacing: 2,
-          /* textTransform: "uppercase", */
-          marginBottom: 2,
-          fontFamily: "Roboto, sans-serif",
-          paddingLeft: { xs: 2, sm: 6, md: 8, lg: 10, xl: 13 },
-          paddingRight: { xs: 2, sm: 6, md: 8, lg: 10, xl: 13 },
-          fontSize: { xs: 16, sm: 16, md: 18, lg: 20, xl: 22 },
-          mb: 8,
-        }}
-      >
+
+      {/* SECTION 3: Earn From Every Post */}
+      <Typography sx={styles.sectionHeading}>
+        Earn From Every Post
+      </Typography>
+      <Typography sx={styles.sectionSubtext}>
         Join campaigns and get paid to promote what you love.
       </Typography>
-      <div className="earn">
-        <Stack
-          sx={{
-            position: "relative",
-            width: "100%",
-            maxWidth: "800px",
-            aspectRatio: "4 / 2",
-            bottom: 0,
-            height: { xs: "40vh", sm: "60vh", md: "65vh", lg: "100vh" },
-            marginTop: 10,
-          }}
-        >
+
+      <Box sx={styles.earnCard}>
+        <Stack sx={styles.imageContainer}>
           <Image
             src="/images/EarnFromEveryPost.png"
             alt="earn"
             fill
-            style={{ objectFit: "inherit", borderRadius: 10 }}
+            style={{ objectFit: "cover", borderRadius: 10 }}
           />
         </Stack>
-      </div>
-      <Stack
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "center",
-          marginBottom: 3,
-        }}
-      >
-        <Typography
-          sx={{
-            fontSize: { xs: 17, sm: 26, md: 38, lg: 50, xl: 60 },
-            color: "white",
-            fontWeight: "bold",
-            letterSpacing: 2,
-            /* textTransform: "uppercase", */
-            marginBottom: 2,
-            fontFamily: "Roboto, sans-serif",
-            paddingLeft: { xs: 2, sm: 6, md: 8, lg: 10, xl: 13 },
-            paddingRight: { xs: 2, sm: 6, md: 8, lg: 10, xl: 13 },
-          }}
-        >
-          Skip The Gatekeepers
-        </Typography>
-      </Stack>
-      <Typography
-        sx={{
-          color: "white",
-          fontWeight: "light",
-          letterSpacing: 2,
-          /* textTransform: "uppercase", */
-          marginBottom: 2,
-          fontFamily: "Roboto, sans-serif",
-          paddingLeft: { xs: 2, sm: 6, md: 8, lg: 10, xl: 13 },
-          paddingRight: { xs: 2, sm: 6, md: 8, lg: 10, xl: 13 },
-          fontSize: { xs: 16, sm: 16, md: 18, lg: 20, xl: 22 },
-          mb: 8,
-        }}
-      >
-        No managers. No middlemen. Just direct deals and clear payments
+      </Box>
+
+      {/* SECTION 4: Skip The Gatekeepers */}
+      <Typography sx={styles.sectionHeading}>
+        Skip The Gatekeepers
       </Typography>
-      <div className="skip">
-        <Stack
-          sx={{
-            position: "relative",
-            width: "100%",
-            maxWidth: "800px",
-            aspectRatio: "4 / 2",
-            bottom: 0,
-            height: { xs: "40vh", sm: "60vh", md: "65vh", lg: "100vh" },
-            marginTop: 10,
-          }}
-        >
+      <Typography sx={styles.sectionSubtext}>
+        No managers. No middlemen. Just direct deals and clear payments.
+      </Typography>
+
+      <Box sx={styles.skipCard}>
+        <Stack sx={styles.imageContainer}>
           <Image
             src="/images/SkipTheGateKeepers.png"
             alt="skip"
             fill
-            style={{ objectFit: "inherit", borderRadius: 10 }}
+            style={{ objectFit: "cover", borderRadius: 10 }}
           />
         </Stack>
-      </div>
-      <Stack style={{ width: "100%", textAlign: "left" }}>
-        <Typography
-          sx={{
-            fontSize: { xs: 20, sm: 30, md: 45, lg: 70, xl: 80 },
-            color: "white",
-            fontWeight: "bold",
-            letterSpacing: 3,
-            /* textTransform: "uppercase", */
-            marginBottom: 2,
-            fontFamily: "Roboto, sans-serif",
-            paddingLeft: { xs: 2, sm: 6, md: 8, lg: 10, xl: 13 },
-            paddingRight: { xs: 2, sm: 6, md: 8, lg: 10, xl: 13 },
-            mb: 4,
-          }}
-        >
-          Try Caskayd Now
-        </Typography>
+      </Box>
+
+      {/* CTA Footer */}
+      <Stack sx={{ width: "100%", textAlign: "left", marginBottom: 4 }}>
+        <Typography sx={styles.heroHeading}>Try Caskayd Now</Typography>
       </Stack>
-      <Stack
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          textAlign: "left",
-          width: "100%",
-          marginBottom: 150,
-          paddingLeft: 20,
-        }}
-      >
+
+      <Stack sx={styles.footerContainer}>
         <Stack
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            width: "100%",
-            overflow: "hidden",
-          }}
+          direction={{ xs: "column", md: "row" }}
+          justifyContent="space-between"
+          alignItems="center"
+          width="100%"
+          spacing={4}
         >
+          {/* Footer Buttons */}
           <Stack
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              textAlign: "left",
-              width: "45%",
-            }}
+            direction={{ xs: "column", sm: "row" }}
+            spacing={3}
+            width={{ xs: "100%", md: "auto" }}
+            justifyContent="center"
           >
-            {/*  <Link>
-              <Button
-                variant="contained"
-                sx={{
-                  backgroundColor: "white",
-                  borderRadius: "12px",
-                  color: "black",
-                  fontSize: { xs: 12, sm: 16, md: 18, lg: 20, xl: 22 },
-                  marginLeft: { xs: 2, sm: 4, md: 7, lg: 10, xl: 12 },
-                  mb: { xs: 2, sm: 3, md: 4, lg: 5, xl: 12 },
-                  width: "100%",
-                  transition: "all 0.3s ease",
-                  textTransform: "none",
-                  fontWeight: "normal",
-                  height: { xs: "40px", sm: "50px", md: "60px", lg: "70px" },
-                  textWrap: "nowrap",
-                  "&:hover": {
-                    transform: "scale(1.05)",
-                    //backgroundColor: "#f0f0f0",
-                    backgroundColor: "#e0e0e0",
-                  },
-                }}
-              >
-                Open Caskayd Web
-              </Button> 
-            </Link> */}
-            <Stack
-              direction={{ xs: "column", sm: "column", md: "row", lg: "row" }}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-evenly",
-                width: "100%",
-                padding: 2,
-              }}
-              sx={{
-                gap: {
-                  xs: 3,
-                  sm: 6,
-                  md: 8,
-                  lg: 10,
-                },
-              }}
-            >
-              <Link style={{ textDecoration: "none" }}>
-                <Button
-                  variant="contained"
-                  sx={{
-                    backgroundColor: "white",
-                    color: "black",
-                    borderRadius: "12px",
-                    textTransform: "none",
-                    transition: "all 0.3s ease",
-                    display: "inline-flex",
-                    height: { xs: "40px", sm: "50px", md: "60px", lg: "70px" },
-                    marginLeft: { xs: 2, sm: 4, md: 7, lg: 10, xl: 12 },
-                    alignItems: "center",
-                    "&:hover": {
-                      transform: "scale(1.05)",
-                      backgroundColor: "#e0e0e0",
-                    },
-                  }}
-                >
-                  <Stack
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      justifyContent: "space-evenly",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Box
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                      sx={{
-                        height: {
-                          xs: "15px",
-                          sm: "18px",
-                          md: "24px",
-                          lg: "30px",
-                        },
-                        width: {
-                          xs: "15px",
-                          sm: "18px",
-                          md: "24px",
-                          lg: "30px",
-                        },
-                      }}
-                    >
-                      <FontAwesomeIcon icon={faGooglePlay} />
-                    </Box>
-
-                    <Stack
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "space-between",
-                        textAlign: "left",
-                        marginLeft: 10,
-                      }}
-                    >
-                      <Typography
-                        sx={{
-                          textWrap: "nowrap",
-                          fontSize: {
-                            xs: "9px",
-                            sm: "10px",
-                            md: "12px",
-                            lg: "14px",
-                          },
-                          textTransform: "uppercase",
-                          fontWeight: "light",
-                          textAlign: "left",
-                        }}
-                      >
-                        Get it on
-                      </Typography>
-                      <Typography
-                        sx={{
-                          textWrap: "nowrap",
-                          fontSize: {
-                            xs: "15px",
-                            sm: "18px",
-                            md: "21px",
-                            lg: "24px",
-                          },
-                        }}
-                      >
-                        Google Play
-                      </Typography>
-                    </Stack>
+            <Link href="#" underline="none">
+              <Button variant="contained" sx={styles.storeButtonWhite}>
+                <Stack direction="row" alignItems="center" spacing={1.5}>
+                  <Box sx={styles.iconBox}>
+                    <FontAwesomeIcon icon={faGooglePlay} />
+                  </Box>
+                  <Stack textAlign="left">
+                    <Typography sx={styles.storeSmallText}>Get it on</Typography>
+                    <Typography sx={styles.storeLargeText}>
+                      Google Play
+                    </Typography>
                   </Stack>
-                </Button>
-              </Link>
-              <Link style={{ textDecoration: "none" }}>
-                <Button
-                  variant="contained"
-                  sx={{
-                    backgroundColor: "black",
-                    color: "white",
-                    borderRadius: "12px",
-                    textTransform: "none",
-                    transition: "all 0.3s ease",
-                    display: "inline-flex",
-                    height: { xs: "40px", sm: "50px", md: "60px", lg: "70px" },
-                    alignItems: "center",
-                    "&:hover": {
-                      transform: "scale(1.05)",
-                      backgroundColor: "#111",
-                    },
-                  }}
-                >
-                  <Stack
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      justifyContent: "space-evenly",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Box
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                      sx={{
-                        height: {
-                          xs: "15px",
-                          sm: "18px",
-                          md: "24px",
-                          lg: "30px",
-                        },
-                        width: {
-                          xs: "15px",
-                          sm: "18px",
-                          md: "24px",
-                          lg: "30px",
-                        },
-                      }}
-                    >
-                      <FontAwesomeIcon icon={faApple} />
-                    </Box>
-
-                    <Stack
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "space-between",
-                        marginLeft: 10,
-                      }}
-                    >
-                      <Typography
-                        sx={{
-                          textWrap: "nowrap",
-                          fontSize: {
-                            xs: "9px",
-                            sm: "10px",
-                            md: "12px",
-                            lg: "14px",
-                          },
-                        }}
-                      >
-                        Download on the
-                      </Typography>
-                      <Typography
-                        sx={{
-                          textWrap: "nowrap",
-                          fontSize: {
-                            xs: "15px",
-                            sm: "18px",
-                            md: "21px",
-                            lg: "24px",
-                          },
-                        }}
-                      >
-                        App Store
-                      </Typography>
-                    </Stack>
+                </Stack>
+              </Button>
+            </Link>
+            <Link href="#" underline="none">
+              <Button variant="contained" sx={styles.storeButtonBlack}>
+                <Stack direction="row" alignItems="center" spacing={1.5}>
+                  <Box sx={styles.iconBox}>
+                    <FontAwesomeIcon icon={faApple} />
+                  </Box>
+                  <Stack textAlign="left">
+                    <Typography sx={styles.storeSmallText}>
+                      Download on the
+                    </Typography>
+                    <Typography sx={styles.storeLargeText}>
+                      App Store
+                    </Typography>
                   </Stack>
-                </Button>
-              </Link>
-            </Stack>
+                </Stack>
+              </Button>
+            </Link>
           </Stack>
-          <Stack style={{ width: "60%", right: 0, paddingRight: 20 }}>
-            <Typography
-              variant="h5"
-              sx={{
-                
-                fontWeight: "light",
-                letterSpacing: 2,
-                textTransform: "uppercase",
-                fontFamily: "Roboto, sans-serif",
-                textAlign: "right",
-                background: "linear-gradient(to right, #846120, #9D2424, #8D077B)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text", // for non-webkit browsers
-                color: "transparent", // fallback
-              }}
-            >
-              Caskayd
-            </Typography>
-          </Stack>
+
+          {/* Footer Logo */}
+          <Typography variant="h5" sx={styles.logoText}>
+            Caskayd
+          </Typography>
         </Stack>
       </Stack>
-      <Stack
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          width: "100%",
-          justifyContent: "center",
-          marginBottom: 50,
-        }}
-      >
-        <Typography
-          sx={{
-            color: "white",
-            fontWeight: "light",
-            letterSpacing: 2,
-            /* textTransform: "uppercase", */
-            fontFamily: "Roboto, sans-serif",
-            paddingLeft: { xs: 2, sm: 6, md: 8, lg: 10, xl: 13 },
-            paddingRight: { xs: 2, sm: 6, md: 8, lg: 10, xl: 13 },
-            fontSize: { xs: 9, sm: 12, md: 14, lg: 17, xl: 22 },
-            mb: 8,
-          }}
-        >
-          Follow us on
-        </Typography>
-        <Stack
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "center",
-            alignItems: "center",
-            width: "100%",
-            overflow: "hidden",
-            height: "50px",
-            marginTop: 3,
-          }}
-          sx={{
-            gap: {
-              xs: 3,
-              sm: 6,
-              md: 8,
-              lg: 10,
-            },
-          }}
-        >
-          <Box
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            sx={{
-              height: {
-                xs: "15px",
-                sm: "18px",
-                md: "24px",
-                lg: "30px",
-              },
-              width: {
-                xs: "15px",
-                sm: "18px",
-                md: "24px",
-                lg: "30px",
-              },
-            }}
-          >
-            <Link
-              href=""
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: "100%",
-                height: "100%",
-                color: "white",
-                textDecoration: "none",
-              }}
-            >
-              <FontAwesomeIcon icon={faXTwitter} style={{ color: "white" }} />
+
+      {/* Footer Social Links */}
+      <Stack alignItems="center" mb={6} width="100%">
+        <Typography sx={styles.followUsText}>Follow us on</Typography>
+        <Stack direction="row" spacing={4} mt={2}>
+          {[faXTwitter, faFacebookF, faLinkedin, faInstagram].map((icon, index) => (
+            <Link key={index} href="#" sx={styles.socialLinkFooter}>
+              <FontAwesomeIcon icon={icon} />
             </Link>
-          </Box>
-          <Box
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            sx={{
-              height: {
-                xs: "15px",
-                sm: "18px",
-                md: "24px",
-                lg: "30px",
-              },
-              width: {
-                xs: "15px",
-                sm: "18px",
-                md: "24px",
-                lg: "30px",
-              },
-            }}
-          >
-            <Link
-              href=""
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: "100%",
-                height: "100%",
-                color: "white",
-                textDecoration: "none",
-              }}
-            >
-              <FontAwesomeIcon icon={faFacebookF} style={{ color: "white" }} />
-            </Link>
-          </Box>
-          <Box
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            sx={{
-              height: {
-                xs: "15px",
-                sm: "18px",
-                md: "24px",
-                lg: "30px",
-              },
-              width: {
-                xs: "15px",
-                sm: "18px",
-                md: "24px",
-                lg: "30px",
-              },
-            }}
-          >
-            <Link
-              href=""
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: "100%",
-                height: "100%",
-                color: "white",
-                textDecoration: "none",
-              }}
-            >
-              <FontAwesomeIcon icon={faLinkedin} style={{ color: "white" }} />
-            </Link>
-          </Box>
-          <Box
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            sx={{
-              height: {
-                xs: "15px",
-                sm: "18px",
-                md: "24px",
-                lg: "30px",
-              },
-              width: {
-                xs: "15px",
-                sm: "18px",
-                md: "24px",
-                lg: "30px",
-              },
-            }}
-          >
-            <Link
-              href=""
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: "100%",
-                height: "100%",
-                color: "white",
-                textDecoration: "none",
-              }}
-            >
-              <FontAwesomeIcon icon={faInstagram} style={{ color: "white" }} />
-            </Link>
-          </Box>
+          ))}
         </Stack>
       </Stack>
-    </div>
+    </Box>
   );
 }
+
+// ============================================
+// IMPROVED STYLES OBJECT
+// ============================================
+
+const commonCardStyles = {
+  // Linear gradient overlay ensures text readability over images
+  backgroundImage:
+    'linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.7) 50%, rgba(0,0,0,0.9) 100%), url("/images/landing.jpeg")',
+  backgroundSize: "cover",
+  backgroundPosition: "center",
+  width: "90%",
+  maxWidth: "1400px",
+  position: "relative",
+  borderRadius: "30px",
+  padding: { xs: "20px", md: "40px" },
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "center",
+  textAlign: "center",
+  border: "1px solid rgba(255, 255, 255, 0.1)",
+  boxShadow: "0 20px 40px rgba(0,0,0,0.5)",
+  overflow: "hidden",
+};
+
+const styles = {
+  landingPage: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    textAlign: "center",
+    backgroundColor: "#050505", // Slightly softer black
+    paddingTop: "140px",
+    minHeight: "100vh",
+    width: "100%",
+    overflowX: "hidden",
+  },
+  // Glassmorphism Navbar
+  navbar: {
+    position: "fixed",
+    top: 20,
+    width: { xs: "95%", sm: "90%", md: "85%", lg: "80%" },
+    maxWidth: "1200px",
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    zIndex: 1000,
+    backgroundColor: "rgba(20, 20, 20, 0.6)",
+    backdropFilter: "blur(16px)",
+    borderRadius: "24px",
+    padding: "12px 24px",
+    border: "1px solid rgba(255, 255, 255, 0.08)",
+    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)",
+  },
+  logoText: {
+    fontWeight: "600",
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
+    fontFamily: "Roboto, sans-serif",
+    background: "linear-gradient(to right, #846120, #9D2424, #8D077B)",
+    WebkitBackgroundClip: "text",
+    WebkitTextFillColor: "transparent",
+    backgroundClip: "text",
+    color: "transparent",
+    cursor: "default",
+  },
+  navButton: {
+    color: "white",
+    borderColor: "rgba(255,255,255,0.3)",
+    borderRadius: "12px",
+    textTransform: "none",
+    fontSize: { xs: 12, sm: 14, md: 16 },
+    padding: "8px 20px",
+    "&:hover": {
+      borderColor: "white",
+      backgroundColor: "rgba(255,255,255,0.05)",
+      boxShadow: "0 0 15px rgba(255,255,255,0.1)",
+    },
+  },
+
+  // Card Styles
+  backgroundCard: {
+    ...commonCardStyles,
+    marginTop: { xs: "20px", md: "40px" },
+    marginBottom: "60px",
+  },
+  earnCard: {
+    ...commonCardStyles,
+    marginTop: "20px",
+    marginBottom: { xs: "80px", md: "140px" },
+  },
+  skipCard: {
+    ...commonCardStyles,
+    marginTop: "20px",
+    marginBottom: { xs: "80px", md: "140px" },
+  },
+
+  // Image Containers within cards
+  imageContainer: {
+    position: "relative",
+    width: "100%",
+    maxWidth: "900px",
+    aspectRatio: { xs: "16/9", md: "21/9" },
+    height: { xs: "200px", sm: "300px", md: "400px", lg: "500px" },
+    marginTop: { xs: 4, md: 8 },
+    boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+    borderRadius: "16px",
+    transition: "transform 0.3s ease",
+    "&:hover": {
+      transform: "scale(1.01)", // Subtle zoom interaction
+    },
+  },
+
+  // Typography Styles
+  heroHeading: {
+    fontSize: { xs: 28, sm: 40, md: 55, lg: 70 },
+    color: "white",
+    fontWeight: "800",
+    letterSpacing: "-0.02em",
+    lineHeight: 1.1,
+    fontFamily: "Roboto, sans-serif",
+    maxWidth: "900px",
+    margin: "0 auto 16px auto",
+    textShadow: "0 4px 20px rgba(0,0,0,0.5)",
+  },
+  heroSubtext: {
+    color: "rgba(255,255,255,0.85)",
+    fontWeight: "400",
+    lineHeight: 1.6,
+    fontFamily: "Roboto, sans-serif",
+    fontSize: { xs: 16, sm: 18, md: 20 },
+    maxWidth: "700px",
+    margin: "0 auto 32px auto",
+  },
+  sectionTitle: {
+    fontSize: { xs: 18, sm: 24, md: 32, lg: 40 },
+    color: "white",
+    fontWeight: "300",
+    letterSpacing: 1,
+    fontFamily: "Roboto, sans-serif",
+    marginBottom: 4,
+    opacity: 0.9,
+  },
+  sectionHeading: {
+    fontSize: { xs: 24, sm: 32, md: 48, lg: 60 },
+    color: "white",
+    fontWeight: "700",
+    letterSpacing: "-0.01em",
+    lineHeight: 1.2,
+    marginBottom: 2,
+    fontFamily: "Roboto, sans-serif",
+    maxWidth: "1000px",
+    paddingX: 2,
+  },
+  sectionSubtext: {
+    color: "rgba(255,255,255,0.7)",
+    fontWeight: "400",
+    fontFamily: "Roboto, sans-serif",
+    fontSize: { xs: 14, sm: 16, md: 20 },
+    marginBottom: 6,
+    paddingX: 2,
+  },
+
+  // Store Buttons
+  storeButtonWhite: {
+    backgroundColor: "white",
+    color: "black",
+    borderRadius: "14px",
+    textTransform: "none",
+    padding: "10px 24px",
+    minWidth: "180px",
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+    "&:hover": {
+      transform: "translateY(-4px)",
+      backgroundColor: "#f5f5f5",
+      boxShadow: "0 10px 20px rgba(255,255,255,0.2)",
+    },
+  },
+  storeButtonBlack: {
+    backgroundColor: "black",
+    color: "white",
+    borderRadius: "14px",
+    textTransform: "none",
+    padding: "10px 24px",
+    minWidth: "180px",
+    border: "1px solid rgba(255,255,255,0.2)",
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+    "&:hover": {
+      transform: "translateY(-4px)",
+      backgroundColor: "#1a1a1a",
+      borderColor: "white",
+      boxShadow: "0 10px 20px rgba(0,0,0,0.5)",
+    },
+  },
+  storeSmallText: {
+    fontSize: { xs: 10, md: 12 },
+    textTransform: "uppercase",
+    fontWeight: "500",
+    opacity: 0.8,
+    lineHeight: 1,
+  },
+  storeLargeText: {
+    fontSize: { xs: 16, md: 20 },
+    fontWeight: "bold",
+    lineHeight: 1.2,
+  },
+  iconBox: {
+    fontSize: { xs: 20, md: 28 },
+    display: "flex",
+    alignItems: "center",
+  },
+
+  // Social Icons
+  socialStrip: {
+    display: "flex",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: { xs: 4, sm: 8, md: 10 },
+    width: "100%",
+    paddingX: 2,
+    marginBottom: 4,
+  },
+  socialIconBox: {
+    fontSize: { xs: 24, sm: 30, md: 40 },
+    color: "rgba(255,255,255,0.6)",
+    transition: "all 0.3s ease",
+    cursor: "pointer",
+    "&:hover": {
+      color: "#fff",
+      transform: "scale(1.2)",
+      filter: "drop-shadow(0 0 8px rgba(255,255,255,0.5))",
+    },
+  },
+
+  // Footer
+  footerContainer: {
+    width: "90%",
+    maxWidth: "1200px",
+    marginBottom: 10,
+    borderTop: "1px solid rgba(255,255,255,0.1)",
+    paddingTop: 6,
+  },
+  followUsText: {
+    color: "rgba(255,255,255,0.5)",
+    textTransform: "uppercase",
+    letterSpacing: 2,
+    fontSize: 12,
+  },
+  socialLinkFooter: {
+    color: "white",
+    fontSize: 24,
+    transition: "color 0.2s",
+    "&:hover": {
+      color: "#8D077B",
+    },
+  },
+};
