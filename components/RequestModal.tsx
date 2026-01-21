@@ -126,12 +126,6 @@ export default function RequestModal({
                            <span className="text-sm font-medium">{data.business_name}</span>
                         </div>
                     </div>
-                    <div className="text-right shrink-0">
-                        <span className="block text-xs text-gray-400 uppercase font-bold mb-0.5">Budget</span>
-                        <div className="bg-green-50 px-3 py-1 rounded-lg border border-green-100 inline-block">
-                            <p className="text-lg font-bold text-green-700">₦{data.campaign_budget.toLocaleString()}</p>
-                        </div>
-                    </div>
                 </div>
 
                 <div className="space-y-6">

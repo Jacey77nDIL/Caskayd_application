@@ -74,7 +74,7 @@ export default function ActiveTaskCard({ task, onClick }: ActiveTaskCardProps) {
 
           {/* Right: Price & Due Date */}
           <div className="text-right flex flex-col items-end">
-            <span className="font-bold text-gray-900">₦{task.price.toLocaleString()}</span>
+            
             <div className="flex items-center text-xs text-gray-400 mt-1 gap-1">
               <CalendarClock size={12} />
               <span>Due {task.dueDate}</span>

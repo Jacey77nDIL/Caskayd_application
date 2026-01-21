@@ -56,7 +56,7 @@ export default function RequestCard({
           </div>
           <div>
             <h3 className="font-bold text-gray-900 leading-tight line-clamp-1">{title}</h3>
-            <p className="text-sm text-green-600 font-bold mt-0.5">{price}</p>
+           
           </div>
         </div>
 
